@@ -1,11 +1,13 @@
 import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle, ThumbsUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { format, differenceInSeconds } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
+import { MotmVotingDialog } from "@/components/MotmVotingDialog";
 
 function Countdown({ targetDate }: { targetDate: string }) {
   const [timeLeft, setTimeLeft] = useState<{
@@ -137,6 +139,7 @@ export function Dashboard() {
   const { data: dashboard, isLoading } = useGetDashboard({
     query: { queryKey: getGetDashboardQueryKey() }
   });
+  const [voteOpen, setVoteOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -167,8 +170,49 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Hero: Next Fixture */}
-      {dashboard.nextFixture ? (
+      {/* Hero: Voting Open banner OR Next Fixture */}
+      {(dashboard as any).votingOpenFixture ? (() => {
+        const vf = (dashboard as any).votingOpenFixture;
+        return (
+          <>
+            <Card className="border-yellow-500/40 bg-card overflow-hidden relative shadow-lg shadow-yellow-500/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/15 via-transparent to-transparent pointer-events-none" />
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <Badge className="bg-yellow-500 text-black font-bold border-0 uppercase tracking-wide text-[11px]">
+                    Voting Open
+                  </Badge>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {format(new Date(vf.matchDate), "MMM do, yyyy")}
+                  </div>
+                </div>
+                <CardTitle className="text-3xl font-black mt-2 text-white">
+                  vs {vf.opponent}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Who was your Man of the Match?</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-yellow-400/80 mb-3 font-medium uppercase tracking-wide">Voting closes in</p>
+                <Countdown targetDate={vf.votingClosesAt} />
+                <Button
+                  className="w-full mt-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-base h-12"
+                  onClick={() => setVoteOpen(true)}
+                >
+                  <ThumbsUp className="w-5 h-5 mr-2" />
+                  Cast Your Vote
+                </Button>
+              </CardContent>
+            </Card>
+            <MotmVotingDialog
+              fixtureId={vf.id}
+              opponent={vf.opponent}
+              open={voteOpen}
+              onOpenChange={setVoteOpen}
+            />
+          </>
+        );
+      })() : dashboard.nextFixture ? (
         <Card className="border-primary/20 bg-card overflow-hidden relative shadow-lg shadow-primary/5">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
           <CardHeader className="pb-2">

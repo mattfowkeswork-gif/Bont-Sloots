@@ -122,8 +122,14 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     votingClosesAt: f.votingClosesAt?.toISOString() ?? null,
   });
 
+  const now = new Date();
+  const votingOpenFixture = [...playedFixtures]
+    .reverse()
+    .find(f => f.votingClosesAt && new Date(f.votingClosesAt) > now) ?? null;
+
   res.json({
     nextFixture: nextFixture ? serializeFixture(nextFixture) : null,
+    votingOpenFixture: votingOpenFixture ? serializeFixture(votingOpenFixture) : null,
     seasonRecord: { played: playedFixtures.length, wins, draws, losses, goalsFor, goalsAgainst },
     topScorer: topScorer && topScorer.totalGoals > 0 ? topScorer : null,
     recentResults: recentResults.map(serializeFixture),
