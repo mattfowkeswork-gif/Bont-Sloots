@@ -26,7 +26,7 @@ function formatMarketValue(value: number) {
   return `£${value}`;
 }
 
-type SortKey = "playerName" | "apps" | "goals" | "assists" | "motmVotes" | "muppetAwards" | "marketValue" | "avgRating";
+type SortKey = "playerName" | "apps" | "goals" | "assists" | "motmVotes" | "momAwards" | "muppetAwards" | "marketValue" | "avgRating";
 type SortDir = "asc" | "desc";
 
 const COLUMNS: { key: SortKey; label: string; shortLabel: string }[] = [
@@ -36,6 +36,7 @@ const COLUMNS: { key: SortKey; label: string; shortLabel: string }[] = [
   { key: "assists", label: "Assists", shortLabel: "Ast" },
   { key: "avgRating", label: "Avg Rating", shortLabel: "Rtg" },
   { key: "motmVotes", label: "MOTM", shortLabel: "MOTM" },
+  { key: "momAwards", label: "Man of Match", shortLabel: "MOM" },
   { key: "muppetAwards", label: "Muppet", shortLabel: "Mup" },
   { key: "marketValue", label: "Market Value", shortLabel: "Value" },
 ];
@@ -153,6 +154,7 @@ export function Leaderboard() {
                     {(player as any).avgRating != null ? Number((player as any).avgRating).toFixed(1) : <span className="text-muted-foreground text-xs">–</span>}
                   </td>
                   <td className="p-2 text-right font-mono text-yellow-400">{player.motmVotes}</td>
+                  <td className="p-2 text-right font-mono text-green-400">{(player as any).momAwards ?? 0}</td>
                   <td className="p-2 text-right font-mono text-red-400">{player.muppetAwards}</td>
                   <td className="p-2 text-right whitespace-nowrap">
                     <span className={`font-bold font-mono ${player.marketValue >= 5_000_000 ? "text-green-400" : "text-red-400"}`}>
@@ -163,7 +165,7 @@ export function Leaderboard() {
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-muted-foreground text-sm">
+                  <td colSpan={10} className="text-center py-10 text-muted-foreground text-sm">
                     No squad data yet.
                   </td>
                 </tr>

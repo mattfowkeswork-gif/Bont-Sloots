@@ -24,7 +24,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     const result = players.map(p => ({
       playerId: p.id, playerName: p.name, position: p.position ?? null,
       scoutingProfile: p.scoutingProfile ?? null,
-      apps: 0, goals: 0, assists: 0, motmVotes: 0, muppetAwards: 0, marketValue: 5000000,
+      apps: 0, goals: 0, assists: 0, motmVotes: 0, momAwards: 0, muppetAwards: 0, marketValue: 5000000,
       avgRating: null, recentForm: [],
     }));
     res.json(result);
@@ -89,6 +89,17 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   }
   const muppetCounts = await muppetQuery.groupBy(awardsTable.playerId);
 
+  // Man of the Match awards
+  let momQuery = db
+    .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
+    .from(awardsTable)
+    .where(eq(awardsTable.type, "mom"))
+    .$dynamic();
+  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
+    momQuery = momQuery.where(and(eq(awardsTable.type, "mom"), inArray(awardsTable.fixtureId, seasonFixtureIds)) as any);
+  }
+  const momCounts = await momQuery.groupBy(awardsTable.playerId);
+
   // Average match rating per player
   let avgRatingQuery = db
     .select({
@@ -142,6 +153,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     const goals = goalCounts.find(g => g.playerId === p.id)?.count ?? 0;
     const assists = assistCounts.find(a => a.playerId === p.id)?.count ?? 0;
     const motmVotes = motmCounts.find(m => m.playerId === p.id)?.count ?? 0;
+    const momAwards = momCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const muppetAwards = muppetCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const avgRatingRaw = avgRatings.find(r => r.playerId === p.id)?.avg;
     const avgRating = avgRatingRaw ? parseFloat(avgRatingRaw) : null;
@@ -173,6 +185,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       goals,
       assists,
       motmVotes,
+      momAwards,
       muppetAwards,
       marketValue,
       avgRating,
