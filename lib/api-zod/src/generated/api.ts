@@ -21,6 +21,7 @@ export const ListPlayersResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   position: zod.string().nullish(),
+  scoutingProfile: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
@@ -31,6 +32,7 @@ export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
 export const CreatePlayerBody = zod.object({
   name: zod.string(),
   position: zod.string().nullish(),
+  scoutingProfile: zod.string().nullish(),
 });
 
 /**
@@ -44,11 +46,23 @@ export const GetPlayerResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   position: zod.string().nullish(),
+  scoutingProfile: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   totalGoals: zod.number(),
   totalAssists: zod.number(),
   momCount: zod.number(),
   motmCount: zod.number(),
+  apps: zod.number(),
+  marketValue: zod.number(),
+  recentForm: zod.array(zod.number()),
+  comments: zod.array(
+    zod.object({
+      id: zod.number(),
+      playerId: zod.number(),
+      comment: zod.string(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
   awardHistory: zod.array(
     zod.object({
       id: zod.number(),
@@ -72,12 +86,14 @@ export const UpdatePlayerParams = zod.object({
 export const UpdatePlayerBody = zod.object({
   name: zod.string(),
   position: zod.string().nullish(),
+  scoutingProfile: zod.string().nullish(),
 });
 
 export const UpdatePlayerResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   position: zod.string().nullish(),
+  scoutingProfile: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -86,6 +102,69 @@ export const UpdatePlayerResponse = zod.object({
  */
 export const DeletePlayerParams = zod.object({
   id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all teammate comments for a player
+ */
+export const ListPlayerCommentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListPlayerCommentsResponseItem = zod.object({
+  id: zod.number(),
+  playerId: zod.number(),
+  comment: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPlayerCommentsResponse = zod.array(
+  ListPlayerCommentsResponseItem,
+);
+
+/**
+ * @summary Add a teammate comment for a player (admin only)
+ */
+export const AddPlayerCommentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AddPlayerCommentBody = zod.object({
+  comment: zod.string(),
+});
+
+/**
+ * @summary Delete a teammate comment (admin only)
+ */
+export const DeletePlayerCommentParams = zod.object({
+  commentId: zod.coerce.number(),
+});
+
+/**
+ * @summary Get a setting value
+ */
+export const GetSettingParams = zod.object({
+  key: zod.coerce.string(),
+});
+
+export const GetSettingResponse = zod.object({
+  key: zod.string(),
+  value: zod.string().nullable(),
+});
+
+/**
+ * @summary Set a setting value (admin only)
+ */
+export const SetSettingParams = zod.object({
+  key: zod.coerce.string(),
+});
+
+export const SetSettingBody = zod.object({
+  value: zod.string(),
+});
+
+export const SetSettingResponse = zod.object({
+  key: zod.string(),
+  value: zod.string(),
 });
 
 /**
@@ -361,6 +440,30 @@ export const GetDashboardResponse = zod.object({
       votingClosesAt: zod.coerce.date().nullish(),
     }),
   ),
+  hallOfFame: zod.object({
+    topScorer: zod
+      .object({
+        playerId: zod.number(),
+        playerName: zod.string(),
+        value: zod.number(),
+      })
+      .nullable(),
+    mostMotms: zod
+      .object({
+        playerId: zod.number(),
+        playerName: zod.string(),
+        value: zod.number(),
+      })
+      .nullable(),
+    muppetKing: zod
+      .object({
+        playerId: zod.number(),
+        playerName: zod.string(),
+        value: zod.number(),
+      })
+      .nullable(),
+  }),
+  squadPhotoUrl: zod.string().nullish(),
 });
 
 /**
@@ -374,12 +477,16 @@ export const GetSquadStatsResponseItem = zod.object({
   playerId: zod.number(),
   playerName: zod.string(),
   position: zod.string().nullish(),
+  scoutingProfile: zod.string().nullish(),
   apps: zod.number(),
   goals: zod.number(),
   assists: zod.number(),
   motmVotes: zod.number(),
   muppetAwards: zod.number(),
   marketValue: zod.number(),
+  recentForm: zod
+    .array(zod.number())
+    .describe("Market value delta for last 3 appearances (oldest to newest)"),
 });
 export const GetSquadStatsResponse = zod.array(GetSquadStatsResponseItem);
 

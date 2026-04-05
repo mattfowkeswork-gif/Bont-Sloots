@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./addPlayerCommentBody";
 export * from "./adminLoginBody";
 export * from "./adminLoginResult";
 export * from "./award";
@@ -23,15 +24,23 @@ export * from "./dashboard";
 export * from "./dashboardSeasonRecord";
 export * from "./fixture";
 export * from "./fixturePlayerEntry";
+export * from "./getSetting200";
 export * from "./getSquadStatsParams";
 export * from "./getVoteStatusParams";
+export * from "./hallOfFame";
+export * from "./hallOfFameMostMotms";
+export * from "./hallOfFameMuppetKing";
+export * from "./hallOfFameTopScorer";
 export * from "./healthStatus";
 export * from "./listStatsParams";
 export * from "./player";
+export * from "./playerComment";
 export * from "./playerProfile";
 export * from "./playerStat";
 export * from "./season";
 export * from "./setFixturePlayersBody";
+export * from "./setSetting200";
+export * from "./setSettingBody";
 export * from "./squadStatRow";
 export * from "./statEntry";
 export * from "./statEntryType";

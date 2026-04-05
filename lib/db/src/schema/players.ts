@@ -6,6 +6,7 @@ export const playersTable = pgTable("players", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   position: text("position"),
+  scoutingProfile: text("scouting_profile"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

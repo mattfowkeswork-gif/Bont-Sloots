@@ -1,10 +1,11 @@
 import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShieldAlert, MapPin, Calendar, Clock, Trophy } from "lucide-react";
+import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { format, differenceInSeconds } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "wouter";
 
 function Countdown({ targetDate }: { targetDate: string }) {
   const [timeLeft, setTimeLeft] = useState<{
@@ -39,21 +40,85 @@ function Countdown({ targetDate }: { targetDate: string }) {
 
   return (
     <div className="grid grid-cols-4 gap-2 text-center mt-4">
-      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
-        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.days).padStart(2, '0')}</div>
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Days</div>
-      </div>
-      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
-        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.hours).padStart(2, '0')}</div>
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Hours</div>
-      </div>
-      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
-        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.minutes).padStart(2, '0')}</div>
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Mins</div>
-      </div>
-      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
-        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.seconds).padStart(2, '0')}</div>
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Secs</div>
+      {[
+        { val: timeLeft.days, label: "Days" },
+        { val: timeLeft.hours, label: "Hours" },
+        { val: timeLeft.minutes, label: "Mins" },
+        { val: timeLeft.seconds, label: "Secs" },
+      ].map(({ val, label }) => (
+        <div key={label} className="bg-secondary/50 rounded-lg p-2 border border-border/50">
+          <div className="text-2xl font-bold font-mono text-primary">{String(val).padStart(2, "0")}</div>
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HallOfFame({ hof }: { hof: { topScorer: any; mostMotms: any; muppetKing: any } }) {
+  const entries = [
+    {
+      label: "Top Scorer",
+      player: hof.topScorer,
+      suffix: (v: number) => `${v} goal${v !== 1 ? "s" : ""}`,
+      Icon: Trophy,
+      iconClass: "text-yellow-400",
+      borderClass: "border-yellow-500/20",
+      bgClass: "from-yellow-500/5",
+    },
+    {
+      label: "Fan Favourite",
+      player: hof.mostMotms,
+      suffix: (v: number) => `${v} MOTM${v !== 1 ? "s" : ""}`,
+      Icon: Star,
+      iconClass: "text-purple-400",
+      borderClass: "border-purple-500/20",
+      bgClass: "from-purple-500/5",
+    },
+    {
+      label: "Muppet King",
+      player: hof.muppetKing,
+      suffix: (v: number) => `${v} award${v !== 1 ? "s" : ""}`,
+      Icon: AlertTriangle,
+      iconClass: "text-red-400",
+      borderClass: "border-red-500/20",
+      bgClass: "from-red-500/5",
+    },
+  ];
+
+  const filled = entries.filter(e => e.player !== null);
+  if (filled.length === 0) return null;
+
+  return (
+    <div>
+      <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+        <Trophy className="w-5 h-5 text-yellow-400" /> Hall of Fame
+      </h3>
+      <div className="grid grid-cols-1 gap-3">
+        {entries.map(({ label, player, suffix, Icon, iconClass, borderClass, bgClass }) => (
+          <div
+            key={label}
+            className={`bg-card border ${borderClass} rounded-xl p-3 flex items-center gap-3 overflow-hidden relative`}
+          >
+            <div className={`absolute inset-0 bg-gradient-to-r ${bgClass} to-transparent pointer-events-none`} />
+            <div className={`relative bg-background rounded-full p-2.5 shrink-0`}>
+              <Icon className={`w-5 h-5 ${iconClass}`} />
+            </div>
+            <div className="relative flex-1 min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+              {player ? (
+                <Link href={`/players/${player.playerId}`}>
+                  <div className="font-black text-white text-sm truncate hover:text-primary transition-colors">
+                    {player.playerName}
+                  </div>
+                  <div className={`text-xs font-medium ${iconClass}`}>{suffix(player.value)}</div>
+                </Link>
+              ) : (
+                <div className="text-sm text-muted-foreground">No data yet</div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -67,6 +132,7 @@ export function Dashboard() {
   if (isLoading) {
     return (
       <div className="space-y-6">
+        <Skeleton className="h-16 w-full rounded-xl bg-card" />
         <Skeleton className="h-64 w-full rounded-xl bg-card" />
         <div className="grid grid-cols-2 gap-4">
           <Skeleton className="h-32 rounded-xl bg-card" />
@@ -80,6 +146,18 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 pb-4">
+      {/* Squad Photo Banner */}
+      {dashboard.squadPhotoUrl && (
+        <div className="w-full rounded-xl overflow-hidden border border-border/50 shadow-lg shadow-black/50" style={{ maxHeight: 220 }}>
+          <img
+            src={dashboard.squadPhotoUrl}
+            alt="Bont Sloots FC Squad"
+            className="w-full object-cover object-center"
+            style={{ maxHeight: 220 }}
+          />
+        </div>
+      )}
+
       {/* Hero: Next Fixture */}
       {dashboard.nextFixture ? (
         <Card className="border-primary/20 bg-card overflow-hidden relative shadow-lg shadow-primary/5">
@@ -111,9 +189,8 @@ export function Dashboard() {
                 </div>
               )}
             </div>
-
             {dashboard.nextFixture.matchDate && (
-              <Countdown targetDate={`${dashboard.nextFixture.matchDate}T${dashboard.nextFixture.kickoffTime || '00:00'}:00`} />
+              <Countdown targetDate={`${dashboard.nextFixture.matchDate}T${dashboard.nextFixture.kickoffTime || "00:00"}:00`} />
             )}
           </CardContent>
         </Card>
@@ -144,7 +221,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Top Scorer */}
         <Card className="bg-card border-border/50 relative overflow-hidden">
           <div className="absolute -right-4 -bottom-4 opacity-5">
             <Trophy className="w-24 h-24" />
@@ -167,39 +243,37 @@ export function Dashboard() {
         </Card>
       </div>
 
+      {/* Hall of Fame */}
+      {dashboard.hallOfFame && <HallOfFame hof={dashboard.hallOfFame} />}
+
       {/* Recent Results */}
       <div>
-        <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-          Recent Results
-        </h3>
+        <h3 className="font-bold text-lg mb-3">Recent Results</h3>
         <div className="space-y-3">
           {dashboard.recentResults.length > 0 ? (
             dashboard.recentResults.map((fixture) => {
               const isWin = (fixture.isHome && fixture.homeScore! > fixture.awayScore!) || (!fixture.isHome && fixture.awayScore! > fixture.homeScore!);
               const isDraw = fixture.homeScore === fixture.awayScore;
-              const isLoss = !isWin && !isDraw;
               const bsScore = fixture.isHome ? fixture.homeScore : fixture.awayScore;
               const oppScore = fixture.isHome ? fixture.awayScore : fixture.homeScore;
 
               return (
                 <Card key={fixture.id} className="bg-card border-border/50 overflow-hidden">
                   <div className="flex items-center">
-                    <div className={`w-1.5 self-stretch ${isWin ? 'bg-green-500' : isDraw ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                    <div className={`w-1.5 self-stretch ${isWin ? "bg-green-500" : isDraw ? "bg-yellow-500" : "bg-red-500"}`} />
                     <div className="flex-1 p-3 flex justify-between items-center">
                       <div>
                         <div className="text-sm font-bold text-white">vs {fixture.opponent}</div>
                         <div className="text-xs text-muted-foreground">{format(new Date(fixture.matchDate), "MMM d")}</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <span className="font-mono font-bold text-lg">{bsScore} - {oppScore}</span>
-                        </div>
+                        <span className="font-mono font-bold text-lg">{bsScore} - {oppScore}</span>
                         <Badge variant="outline" className={
-                          isWin ? 'text-green-500 border-green-500/20 bg-green-500/10' : 
-                          isDraw ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/10' : 
-                          'text-red-500 border-red-500/20 bg-red-500/10'
+                          isWin ? "text-green-500 border-green-500/20 bg-green-500/10" :
+                          isDraw ? "text-yellow-500 border-yellow-500/20 bg-yellow-500/10" :
+                          "text-red-500 border-red-500/20 bg-red-500/10"
                         }>
-                          {isWin ? 'W' : isDraw ? 'D' : 'L'}
+                          {isWin ? "W" : isDraw ? "D" : "L"}
                         </Badge>
                       </div>
                     </div>

@@ -10,10 +10,13 @@ import seasonsRouter from "./seasons";
 import squadStatsRouter from "./squad_stats";
 import fixturePlayersRouter from "./fixture_players";
 import motmVotesRouter from "./motm_votes";
+import playerCommentsRouter from "./player_comments";
+import settingsRouter from "./settings";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(playerCommentsRouter);
 router.use(playersRouter);
 router.use(fixturesRouter);
 router.use(statsRouter);
@@ -24,5 +27,6 @@ router.use(seasonsRouter);
 router.use(squadStatsRouter);
 router.use(fixturePlayersRouter);
 router.use(motmVotesRouter);
+router.use(settingsRouter);
 
 export default router;

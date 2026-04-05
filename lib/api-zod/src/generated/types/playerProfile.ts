@@ -6,15 +6,21 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Award } from "./award";
+import type { PlayerComment } from "./playerComment";
 
 export interface PlayerProfile {
   id: number;
   name: string;
   position?: string | null;
+  scoutingProfile?: string | null;
   createdAt: Date;
   totalGoals: number;
   totalAssists: number;
   momCount: number;
   motmCount: number;
+  apps: number;
+  marketValue: number;
+  recentForm: number[];
+  comments: PlayerComment[];
   awardHistory: Award[];
 }

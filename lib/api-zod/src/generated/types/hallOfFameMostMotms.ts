@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreatePlayerBody {
-  name: string;
-  position?: string | null;
-  scoutingProfile?: string | null;
-}
+export type HallOfFameMostMotms = {
+  playerId: number;
+  playerName: string;
+  value: number;
+} | null;

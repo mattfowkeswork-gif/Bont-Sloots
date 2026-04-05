@@ -7,6 +7,7 @@
  */
 import type { DashboardSeasonRecord } from "./dashboardSeasonRecord";
 import type { Fixture } from "./fixture";
+import type { HallOfFame } from "./hallOfFame";
 import type { PlayerStat } from "./playerStat";
 
 export interface Dashboard {
@@ -14,4 +15,6 @@ export interface Dashboard {
   seasonRecord: DashboardSeasonRecord;
   topScorer?: PlayerStat | null;
   recentResults: Fixture[];
+  hallOfFame: HallOfFame;
+  squadPhotoUrl?: string | null;
 }

@@ -10,10 +10,13 @@ export interface SquadStatRow {
   playerId: number;
   playerName: string;
   position?: string | null;
+  scoutingProfile?: string | null;
   apps: number;
   goals: number;
   assists: number;
   motmVotes: number;
   muppetAwards: number;
   marketValue: number;
+  /** Market value delta for last 3 appearances (oldest to newest) */
+  recentForm: number[];
 }

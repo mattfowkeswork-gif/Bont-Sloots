@@ -29,6 +29,14 @@ export interface Player {
   id: number;
   name: string;
   position?: string | null;
+  scoutingProfile?: string | null;
+  createdAt: string;
+}
+
+export interface PlayerComment {
+  id: number;
+  playerId: number;
+  comment: string;
   createdAt: string;
 }
 
@@ -53,11 +61,16 @@ export interface PlayerProfile {
   id: number;
   name: string;
   position?: string | null;
+  scoutingProfile?: string | null;
   createdAt: string;
   totalGoals: number;
   totalAssists: number;
   momCount: number;
   motmCount: number;
+  apps: number;
+  marketValue: number;
+  recentForm: number[];
+  comments: PlayerComment[];
   awardHistory: Award[];
 }
 
@@ -73,6 +86,7 @@ export interface PlayerStat {
 export interface CreatePlayerBody {
   name: string;
   position?: string | null;
+  scoutingProfile?: string | null;
 }
 
 export interface Fixture {
@@ -159,6 +173,30 @@ export interface CreateAwardBody {
   type: CreateAwardBodyType;
 }
 
+export type HallOfFameTopScorer = {
+  playerId: number;
+  playerName: string;
+  value: number;
+} | null;
+
+export type HallOfFameMostMotms = {
+  playerId: number;
+  playerName: string;
+  value: number;
+} | null;
+
+export type HallOfFameMuppetKing = {
+  playerId: number;
+  playerName: string;
+  value: number;
+} | null;
+
+export interface HallOfFame {
+  topScorer: HallOfFameTopScorer;
+  mostMotms: HallOfFameMostMotms;
+  muppetKing: HallOfFameMuppetKing;
+}
+
 export type DashboardSeasonRecord = {
   played: number;
   wins: number;
@@ -173,6 +211,8 @@ export interface Dashboard {
   seasonRecord: DashboardSeasonRecord;
   topScorer?: PlayerStat | null;
   recentResults: Fixture[];
+  hallOfFame: HallOfFame;
+  squadPhotoUrl?: string | null;
 }
 
 export interface AdminLoginBody {
@@ -188,12 +228,15 @@ export interface SquadStatRow {
   playerId: number;
   playerName: string;
   position?: string | null;
+  scoutingProfile?: string | null;
   apps: number;
   goals: number;
   assists: number;
   motmVotes: number;
   muppetAwards: number;
   marketValue: number;
+  /** Market value delta for last 3 appearances (oldest to newest) */
+  recentForm: number[];
 }
 
 export interface FixturePlayerEntry {
@@ -232,6 +275,24 @@ export interface CastVoteBody {
   playerId: number;
   deviceId: string;
 }
+
+export type AddPlayerCommentBody = {
+  comment: string;
+};
+
+export type GetSetting200 = {
+  key: string;
+  value: string | null;
+};
+
+export type SetSettingBody = {
+  value: string;
+};
+
+export type SetSetting200 = {
+  key: string;
+  value: string;
+};
 
 export type ListStatsParams = {
   seasonId?: number;

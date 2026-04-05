@@ -5,3 +5,5 @@ export * from "./stats";
 export * from "./awards";
 export * from "./fixture_players";
 export * from "./motm_votes";
+export * from "./player_comments";
+export * from "./settings";

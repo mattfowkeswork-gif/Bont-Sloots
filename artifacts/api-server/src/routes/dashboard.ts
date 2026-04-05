@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { gte, lte, eq, sql, desc } from "drizzle-orm";
-import { db, fixturesTable, statsTable, awardsTable, playersTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -65,6 +65,11 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     .where(eq(awardsTable.type, "motm"))
     .groupBy(awardsTable.playerId);
 
+  const fanMotmCounts = await db
+    .select({ playerId: motmVotesTable.playerId, count: sql<number>`count(*)::int` })
+    .from(motmVotesTable)
+    .groupBy(motmVotesTable.playerId);
+
   const playerStats = players.map(p => ({
     playerId: p.id,
     playerName: p.name,
@@ -72,46 +77,54 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     totalAssists: assistCounts.find(a => a.playerId === p.id)?.count ?? 0,
     momCount: momCounts.find(m => m.playerId === p.id)?.count ?? 0,
     motmCount: motmCounts.find(m => m.playerId === p.id)?.count ?? 0,
+    fanMotm: fanMotmCounts.find(m => m.playerId === p.id)?.count ?? 0,
   }));
 
-  const topScorer = playerStats.sort((a, b) => b.totalGoals - a.totalGoals)[0] ?? null;
+  const topScorer = [...playerStats].sort((a, b) => b.totalGoals - a.totalGoals)[0] ?? null;
+
+  // Hall of Fame
+  const mostMotmsPlayer = [...playerStats].sort((a, b) => b.fanMotm - a.fanMotm)[0] ?? null;
+  const muppetKingPlayer = [...playerStats].sort((a, b) => b.motmCount - a.motmCount)[0] ?? null;
+
+  const hallOfFame = {
+    topScorer: topScorer && topScorer.totalGoals > 0
+      ? { playerId: topScorer.playerId, playerName: topScorer.playerName, value: topScorer.totalGoals }
+      : null,
+    mostMotms: mostMotmsPlayer && mostMotmsPlayer.fanMotm > 0
+      ? { playerId: mostMotmsPlayer.playerId, playerName: mostMotmsPlayer.playerName, value: mostMotmsPlayer.fanMotm }
+      : null,
+    muppetKing: muppetKingPlayer && muppetKingPlayer.motmCount > 0
+      ? { playerId: muppetKingPlayer.playerId, playerName: muppetKingPlayer.playerName, value: muppetKingPlayer.motmCount }
+      : null,
+  };
+
+  // Squad photo URL from settings
+  const [squadPhotoSetting] = await db.select().from(settingsTable).where(eq(settingsTable.key, "squad_photo_url"));
+  const squadPhotoUrl = squadPhotoSetting?.value ?? null;
+
+  const serializeFixture = (f: typeof allFixtures[0]) => ({
+    id: f.id,
+    opponent: f.opponent,
+    matchDate: f.matchDate,
+    kickoffTime: f.kickoffTime ?? null,
+    kickoffTbc: f.kickoffTbc,
+    homeScore: f.homeScore ?? null,
+    awayScore: f.awayScore ?? null,
+    played: f.played,
+    isHome: f.isHome,
+    venue: f.venue ?? null,
+    notes: f.notes ?? null,
+    seasonId: f.seasonId ?? null,
+    votingClosesAt: f.votingClosesAt?.toISOString() ?? null,
+  });
 
   res.json({
-    nextFixture: nextFixture ? {
-      id: nextFixture.id,
-      opponent: nextFixture.opponent,
-      matchDate: nextFixture.matchDate,
-      kickoffTime: nextFixture.kickoffTime ?? null,
-      kickoffTbc: nextFixture.kickoffTbc,
-      homeScore: nextFixture.homeScore ?? null,
-      awayScore: nextFixture.awayScore ?? null,
-      played: nextFixture.played,
-      isHome: nextFixture.isHome,
-      venue: nextFixture.venue ?? null,
-      notes: nextFixture.notes ?? null,
-    } : null,
-    seasonRecord: {
-      played: playedFixtures.length,
-      wins,
-      draws,
-      losses,
-      goalsFor,
-      goalsAgainst,
-    },
+    nextFixture: nextFixture ? serializeFixture(nextFixture) : null,
+    seasonRecord: { played: playedFixtures.length, wins, draws, losses, goalsFor, goalsAgainst },
     topScorer: topScorer && topScorer.totalGoals > 0 ? topScorer : null,
-    recentResults: recentResults.map(f => ({
-      id: f.id,
-      opponent: f.opponent,
-      matchDate: f.matchDate,
-      kickoffTime: f.kickoffTime ?? null,
-      kickoffTbc: f.kickoffTbc,
-      homeScore: f.homeScore ?? null,
-      awayScore: f.awayScore ?? null,
-      played: f.played,
-      isHome: f.isHome,
-      venue: f.venue ?? null,
-      notes: f.notes ?? null,
-    })),
+    recentResults: recentResults.map(serializeFixture),
+    hallOfFame,
+    squadPhotoUrl,
   });
 });
 

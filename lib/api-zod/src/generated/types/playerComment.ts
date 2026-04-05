@@ -6,8 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreatePlayerBody {
-  name: string;
-  position?: string | null;
-  scoutingProfile?: string | null;
+export interface PlayerComment {
+  id: number;
+  playerId: number;
+  comment: string;
+  createdAt: Date;
 }

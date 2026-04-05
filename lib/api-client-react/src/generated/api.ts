@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AddPlayerCommentBody,
   AdminLoginBody,
   AdminLoginResult,
   Award,
@@ -30,15 +31,19 @@ import type {
   Dashboard,
   Fixture,
   FixturePlayerEntry,
+  GetSetting200,
   GetSquadStatsParams,
   GetVoteStatusParams,
   HealthStatus,
   ListStatsParams,
   Player,
+  PlayerComment,
   PlayerProfile,
   PlayerStat,
   Season,
   SetFixturePlayersBody,
+  SetSetting200,
+  SetSettingBody,
   SquadStatRow,
   StatEntry,
   UpdateFixtureBody,
@@ -542,6 +547,438 @@ export const useDeletePlayer = <
   TContext
 > => {
   return useMutation(getDeletePlayerMutationOptions(options));
+};
+
+/**
+ * @summary List all teammate comments for a player
+ */
+export const getListPlayerCommentsUrl = (id: number) => {
+  return `/api/players/${id}/comments`;
+};
+
+export const listPlayerComments = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerComment[]> => {
+  return customFetch<PlayerComment[]>(getListPlayerCommentsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPlayerCommentsQueryKey = (id: number) => {
+  return [`/api/players/${id}/comments`] as const;
+};
+
+export const getListPlayerCommentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPlayerComments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPlayerComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPlayerCommentsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPlayerComments>>
+  > = ({ signal }) => listPlayerComments(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPlayerComments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPlayerCommentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPlayerComments>>
+>;
+export type ListPlayerCommentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all teammate comments for a player
+ */
+
+export function useListPlayerComments<
+  TData = Awaited<ReturnType<typeof listPlayerComments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPlayerComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPlayerCommentsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a teammate comment for a player (admin only)
+ */
+export const getAddPlayerCommentUrl = (id: number) => {
+  return `/api/players/${id}/comments`;
+};
+
+export const addPlayerComment = async (
+  id: number,
+  addPlayerCommentBody: AddPlayerCommentBody,
+  options?: RequestInit,
+): Promise<PlayerComment> => {
+  return customFetch<PlayerComment>(getAddPlayerCommentUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(addPlayerCommentBody),
+  });
+};
+
+export const getAddPlayerCommentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addPlayerComment>>,
+    TError,
+    { id: number; data: BodyType<AddPlayerCommentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addPlayerComment>>,
+  TError,
+  { id: number; data: BodyType<AddPlayerCommentBody> },
+  TContext
+> => {
+  const mutationKey = ["addPlayerComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addPlayerComment>>,
+    { id: number; data: BodyType<AddPlayerCommentBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return addPlayerComment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddPlayerCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addPlayerComment>>
+>;
+export type AddPlayerCommentMutationBody = BodyType<AddPlayerCommentBody>;
+export type AddPlayerCommentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a teammate comment for a player (admin only)
+ */
+export const useAddPlayerComment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addPlayerComment>>,
+    TError,
+    { id: number; data: BodyType<AddPlayerCommentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addPlayerComment>>,
+  TError,
+  { id: number; data: BodyType<AddPlayerCommentBody> },
+  TContext
+> => {
+  return useMutation(getAddPlayerCommentMutationOptions(options));
+};
+
+/**
+ * @summary Delete a teammate comment (admin only)
+ */
+export const getDeletePlayerCommentUrl = (commentId: number) => {
+  return `/api/players/comments/${commentId}`;
+};
+
+export const deletePlayerComment = async (
+  commentId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeletePlayerCommentUrl(commentId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeletePlayerCommentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlayerComment>>,
+    TError,
+    { commentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deletePlayerComment>>,
+  TError,
+  { commentId: number },
+  TContext
+> => {
+  const mutationKey = ["deletePlayerComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deletePlayerComment>>,
+    { commentId: number }
+  > = (props) => {
+    const { commentId } = props ?? {};
+
+    return deletePlayerComment(commentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeletePlayerCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deletePlayerComment>>
+>;
+
+export type DeletePlayerCommentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a teammate comment (admin only)
+ */
+export const useDeletePlayerComment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlayerComment>>,
+    TError,
+    { commentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deletePlayerComment>>,
+  TError,
+  { commentId: number },
+  TContext
+> => {
+  return useMutation(getDeletePlayerCommentMutationOptions(options));
+};
+
+/**
+ * @summary Get a setting value
+ */
+export const getGetSettingUrl = (key: string) => {
+  return `/api/settings/${key}`;
+};
+
+export const getSetting = async (
+  key: string,
+  options?: RequestInit,
+): Promise<GetSetting200> => {
+  return customFetch<GetSetting200>(getGetSettingUrl(key), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSettingQueryKey = (key: string) => {
+  return [`/api/settings/${key}`] as const;
+};
+
+export const getGetSettingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSetting>>,
+  TError = ErrorType<unknown>,
+>(
+  key: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSetting>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSettingQueryKey(key);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSetting>>> = ({
+    signal,
+  }) => getSetting(key, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!key,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSetting>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSettingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSetting>>
+>;
+export type GetSettingQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get a setting value
+ */
+
+export function useGetSetting<
+  TData = Awaited<ReturnType<typeof getSetting>>,
+  TError = ErrorType<unknown>,
+>(
+  key: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSetting>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSettingQueryOptions(key, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Set a setting value (admin only)
+ */
+export const getSetSettingUrl = (key: string) => {
+  return `/api/settings/${key}`;
+};
+
+export const setSetting = async (
+  key: string,
+  setSettingBody: SetSettingBody,
+  options?: RequestInit,
+): Promise<SetSetting200> => {
+  return customFetch<SetSetting200>(getSetSettingUrl(key), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setSettingBody),
+  });
+};
+
+export const getSetSettingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setSetting>>,
+    TError,
+    { key: string; data: BodyType<SetSettingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setSetting>>,
+  TError,
+  { key: string; data: BodyType<SetSettingBody> },
+  TContext
+> => {
+  const mutationKey = ["setSetting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setSetting>>,
+    { key: string; data: BodyType<SetSettingBody> }
+  > = (props) => {
+    const { key, data } = props ?? {};
+
+    return setSetting(key, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetSettingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setSetting>>
+>;
+export type SetSettingMutationBody = BodyType<SetSettingBody>;
+export type SetSettingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Set a setting value (admin only)
+ */
+export const useSetSetting = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setSetting>>,
+    TError,
+    { key: string; data: BodyType<SetSettingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setSetting>>,
+  TError,
+  { key: string; data: BodyType<SetSettingBody> },
+  TContext
+> => {
+  return useMutation(getSetSettingMutationOptions(options));
 };
 
 /**

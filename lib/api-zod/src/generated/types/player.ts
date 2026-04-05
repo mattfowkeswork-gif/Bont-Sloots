@@ -10,5 +10,6 @@ export interface Player {
   id: number;
   name: string;
   position?: string | null;
+  scoutingProfile?: string | null;
   createdAt: Date;
 }

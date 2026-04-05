@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreatePlayerBody {
-  name: string;
-  position?: string | null;
-  scoutingProfile?: string | null;
-}
+export type GetSetting200 = {
+  key: string;
+  value: string | null;
+};
