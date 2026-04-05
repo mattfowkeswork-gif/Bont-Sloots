@@ -22,32 +22,31 @@ export function AdminStats() {
   const [fixtureId, setFixtureId] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
   const [statType, setStatType] = useState<StatType>("goal");
+  const [count, setCount] = useState(1);
 
   const playedFixtures = fixtures?.filter(f => f.played) || [];
 
-  const handleAddStat = () => {
+  const handleAddStat = async () => {
     if (!fixtureId || !playerId) {
       toast({ title: "Please select both fixture and player", variant: "destructive" });
       return;
     }
 
-    createStat.mutate(
-      {
-        data: {
-          fixtureId: Number(fixtureId),
-          playerId: Number(playerId),
-          type: statType,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast({ title: `${statType === "goal" ? "Goal" : "Assist"} added successfully` });
-          queryClient.invalidateQueries({ queryKey: getListStatsQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
-        },
-      }
-    );
+    const data = { fixtureId: Number(fixtureId), playerId: Number(playerId), type: statType };
+
+    // Fire one mutation per count sequentially
+    for (let i = 0; i < count; i++) {
+      await new Promise<void>((resolve, reject) =>
+        createStat.mutate({ data }, { onSuccess: () => resolve(), onError: reject })
+      );
+    }
+
+    const label = statType === "goal" ? (count === 1 ? "Goal" : "Goals") : (count === 1 ? "Assist" : "Assists");
+    toast({ title: `${count} ${label} added` });
+    queryClient.invalidateQueries({ queryKey: getListStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
+    setCount(1);
   };
 
   return (
@@ -113,12 +112,41 @@ export function AdminStats() {
               </div>
             </div>
 
+            <div className="grid gap-2">
+              <Label>How many?</Label>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => setCount(c => Math.max(1, c - 1))}
+                  disabled={count <= 1}
+                >
+                  -
+                </Button>
+                <span className="text-xl font-bold w-8 text-center">{count}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => setCount(c => Math.min(10, c + 1))}
+                  disabled={count >= 10}
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+
             <Button
               onClick={handleAddStat}
               className="w-full mt-4"
               disabled={!fixtureId || !playerId || createStat.isPending}
             >
-              {createStat.isPending ? "Saving..." : `Record ${statType === "goal" ? "Goal" : "Assist"}`}
+              {createStat.isPending
+                ? "Saving..."
+                : `Record ${count} ${statType === "goal" ? (count === 1 ? "Goal" : "Goals") : (count === 1 ? "Assist" : "Assists")}`}
             </Button>
           </CardContent>
         </Card>
