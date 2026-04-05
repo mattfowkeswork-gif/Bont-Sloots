@@ -183,6 +183,18 @@ router.put("/fixtures/:id", async (req, res): Promise<void> => {
   res.json(mapFixture(fixture));
 });
 
+router.post("/fixtures/:id/close-voting", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [fixture] = await db
+    .update(fixturesTable)
+    .set({ votingClosesAt: new Date() })
+    .where(eq(fixturesTable.id, id))
+    .returning();
+  if (!fixture) { res.status(404).json({ error: "Fixture not found" }); return; }
+  res.json(mapFixture(fixture));
+});
+
 router.delete("/fixtures/:id", async (req, res): Promise<void> => {
   const params = DeleteFixtureParams.safeParse(req.params);
   if (!params.success) {

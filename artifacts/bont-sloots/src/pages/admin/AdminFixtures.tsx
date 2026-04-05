@@ -6,7 +6,7 @@ import {
   useGetFixtureRatings, useSetFixtureRatings, getGetFixtureRatingsQueryKey,
   getGetDashboardQueryKey, getGetSquadStatsQueryKey,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users, Star, Minus as MinusIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users, Star, Minus as MinusIcon, VoteIcon } from "lucide-react";
 import { format } from "date-fns";
 
 // Player presence dialog for a single fixture
@@ -247,6 +247,20 @@ export function AdminFixtures() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingFixture, setEditingFixture] = useState<any>(null);
 
+  const closeVoting = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/fixtures/${id}/close-voting`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to close voting");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getListFixturesQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+      toast({ title: "Voting closed" });
+    },
+    onError: () => toast({ title: "Failed to close voting", variant: "destructive" }),
+  });
+
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -382,6 +396,17 @@ export function AdminFixtures() {
                     )}
                   </div>
                   <div className="flex gap-2">
+                    {fixture.played && fixture.votingClosesAt && new Date(fixture.votingClosesAt) > new Date() && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        title="Close voting now"
+                        onClick={() => closeVoting.mutate(fixture.id)}
+                        disabled={closeVoting.isPending}
+                      >
+                        <VoteIcon className="w-4 h-4 text-yellow-400" />
+                      </Button>
+                    )}
                     {fixture.played && (
                       <PresenceDialog fixtureId={fixture.id} opponent={fixture.opponent} />
                     )}
