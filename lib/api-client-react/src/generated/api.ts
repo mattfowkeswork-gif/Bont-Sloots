@@ -23,13 +23,16 @@ import type {
   CreateAwardBody,
   CreateFixtureBody,
   CreatePlayerBody,
+  CreateSeasonBody,
   CreateStatBody,
   Dashboard,
   Fixture,
   HealthStatus,
+  ListStatsParams,
   Player,
   PlayerProfile,
   PlayerStat,
+  Season,
   StatEntry,
   UpdateFixtureBody,
 } from "./api.schemas";
@@ -953,39 +956,389 @@ export const useDeleteFixture = <
 };
 
 /**
- * @summary Get goals and assists leaderboard
+ * @summary List all seasons
  */
-export const getListStatsUrl = () => {
-  return `/api/stats`;
+export const getListSeasonsUrl = () => {
+  return `/api/seasons`;
 };
 
-export const listStats = async (
-  options?: RequestInit,
-): Promise<PlayerStat[]> => {
-  return customFetch<PlayerStat[]>(getListStatsUrl(), {
+export const listSeasons = async (options?: RequestInit): Promise<Season[]> => {
+  return customFetch<Season[]>(getListSeasonsUrl(), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListStatsQueryKey = () => {
-  return [`/api/stats`] as const;
+export const getListSeasonsQueryKey = () => {
+  return [`/api/seasons`] as const;
+};
+
+export const getListSeasonsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSeasons>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasons>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSeasonsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSeasons>>> = ({
+    signal,
+  }) => listSeasons({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasons>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSeasonsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSeasons>>
+>;
+export type ListSeasonsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all seasons
+ */
+
+export function useListSeasons<
+  TData = Awaited<ReturnType<typeof listSeasons>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSeasons>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSeasonsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a season
+ */
+export const getCreateSeasonUrl = () => {
+  return `/api/seasons`;
+};
+
+export const createSeason = async (
+  createSeasonBody: CreateSeasonBody,
+  options?: RequestInit,
+): Promise<Season> => {
+  return customFetch<Season>(getCreateSeasonUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSeasonBody),
+  });
+};
+
+export const getCreateSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSeason>>,
+    TError,
+    { data: BodyType<CreateSeasonBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSeason>>,
+  TError,
+  { data: BodyType<CreateSeasonBody> },
+  TContext
+> => {
+  const mutationKey = ["createSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSeason>>,
+    { data: BodyType<CreateSeasonBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createSeason(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSeason>>
+>;
+export type CreateSeasonMutationBody = BodyType<CreateSeasonBody>;
+export type CreateSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a season
+ */
+export const useCreateSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSeason>>,
+    TError,
+    { data: BodyType<CreateSeasonBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSeason>>,
+  TError,
+  { data: BodyType<CreateSeasonBody> },
+  TContext
+> => {
+  return useMutation(getCreateSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Update a season
+ */
+export const getUpdateSeasonUrl = (id: number) => {
+  return `/api/seasons/${id}`;
+};
+
+export const updateSeason = async (
+  id: number,
+  createSeasonBody: CreateSeasonBody,
+  options?: RequestInit,
+): Promise<Season> => {
+  return customFetch<Season>(getUpdateSeasonUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSeasonBody),
+  });
+};
+
+export const getUpdateSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSeason>>,
+    TError,
+    { id: number; data: BodyType<CreateSeasonBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateSeason>>,
+  TError,
+  { id: number; data: BodyType<CreateSeasonBody> },
+  TContext
+> => {
+  const mutationKey = ["updateSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateSeason>>,
+    { id: number; data: BodyType<CreateSeasonBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateSeason(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateSeason>>
+>;
+export type UpdateSeasonMutationBody = BodyType<CreateSeasonBody>;
+export type UpdateSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a season
+ */
+export const useUpdateSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSeason>>,
+    TError,
+    { id: number; data: BodyType<CreateSeasonBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateSeason>>,
+  TError,
+  { id: number; data: BodyType<CreateSeasonBody> },
+  TContext
+> => {
+  return useMutation(getUpdateSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Delete a season
+ */
+export const getDeleteSeasonUrl = (id: number) => {
+  return `/api/seasons/${id}`;
+};
+
+export const deleteSeason = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteSeasonUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteSeasonMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteSeason"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteSeason>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteSeason(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteSeasonMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteSeason>>
+>;
+
+export type DeleteSeasonMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a season
+ */
+export const useDeleteSeason = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSeason>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteSeason>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteSeasonMutationOptions(options));
+};
+
+/**
+ * @summary Get goals and assists leaderboard
+ */
+export const getListStatsUrl = (params?: ListStatsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/stats?${stringifiedParams}`
+    : `/api/stats`;
+};
+
+export const listStats = async (
+  params?: ListStatsParams,
+  options?: RequestInit,
+): Promise<PlayerStat[]> => {
+  return customFetch<PlayerStat[]>(getListStatsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListStatsQueryKey = (params?: ListStatsParams) => {
+  return [`/api/stats`, ...(params ? [params] : [])] as const;
 };
 
 export const getListStatsQueryOptions = <
   TData = Awaited<ReturnType<typeof listStats>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listStats>>, TError, TData>;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListStatsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListStatsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListStatsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listStats>>> = ({
     signal,
-  }) => listStats({ signal, ...requestOptions });
+  }) => listStats(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listStats>>,
@@ -1006,11 +1359,18 @@ export type ListStatsQueryError = ErrorType<unknown>;
 export function useListStats<
   TData = Awaited<ReturnType<typeof listStats>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listStats>>, TError, TData>;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListStatsQueryOptions(options);
+>(
+  params?: ListStatsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListStatsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

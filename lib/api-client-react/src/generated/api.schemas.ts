@@ -9,6 +9,22 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface Season {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  createdAt: string;
+}
+
+export interface CreateSeasonBody {
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+}
+
 export interface Player {
   id: number;
   name: string;
@@ -71,6 +87,7 @@ export interface Fixture {
   isHome: boolean;
   venue?: string | null;
   notes?: string | null;
+  seasonId?: number | null;
 }
 
 export interface CreateFixtureBody {
@@ -81,6 +98,7 @@ export interface CreateFixtureBody {
   isHome: boolean;
   venue?: string | null;
   notes?: string | null;
+  seasonId?: number | null;
 }
 
 export interface UpdateFixtureBody {
@@ -94,6 +112,7 @@ export interface UpdateFixtureBody {
   isHome?: boolean;
   venue?: string | null;
   notes?: string | null;
+  seasonId?: number | null;
 }
 
 export type StatEntryType = (typeof StatEntryType)[keyof typeof StatEntryType];
@@ -163,3 +182,7 @@ export interface AdminLoginResult {
   success: boolean;
   token?: string | null;
 }
+
+export type ListStatsParams = {
+  seasonId?: number;
+};

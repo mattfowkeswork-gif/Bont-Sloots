@@ -14,4 +14,5 @@ export interface CreateFixtureBody {
   isHome: boolean;
   venue?: string | null;
   notes?: string | null;
+  seasonId?: number | null;
 }

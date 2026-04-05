@@ -103,6 +103,7 @@ export const ListFixturesResponseItem = zod.object({
   isHome: zod.boolean(),
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
 });
 export const ListFixturesResponse = zod.array(ListFixturesResponseItem);
 
@@ -117,6 +118,7 @@ export const CreateFixtureBody = zod.object({
   isHome: zod.boolean(),
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
 });
 
 /**
@@ -138,6 +140,7 @@ export const GetFixtureResponse = zod.object({
   isHome: zod.boolean(),
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
 });
 
 /**
@@ -158,6 +161,7 @@ export const UpdateFixtureBody = zod.object({
   isHome: zod.boolean().optional(),
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
 });
 
 export const UpdateFixtureResponse = zod.object({
@@ -172,6 +176,7 @@ export const UpdateFixtureResponse = zod.object({
   isHome: zod.boolean(),
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
+  seasonId: zod.number().nullish(),
 });
 
 /**
@@ -182,8 +187,65 @@ export const DeleteFixtureParams = zod.object({
 });
 
 /**
+ * @summary List all seasons
+ */
+export const ListSeasonsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  isCurrent: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+export const ListSeasonsResponse = zod.array(ListSeasonsResponseItem);
+
+/**
+ * @summary Create a season
+ */
+export const CreateSeasonBody = zod.object({
+  name: zod.string(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  isCurrent: zod.boolean(),
+});
+
+/**
+ * @summary Update a season
+ */
+export const UpdateSeasonParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSeasonBody = zod.object({
+  name: zod.string(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  isCurrent: zod.boolean(),
+});
+
+export const UpdateSeasonResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  isCurrent: zod.boolean(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a season
+ */
+export const DeleteSeasonParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Get goals and assists leaderboard
  */
+export const ListStatsQueryParams = zod.object({
+  seasonId: zod.coerce.number().optional(),
+});
+
 export const ListStatsResponseItem = zod.object({
   playerId: zod.number(),
   playerName: zod.string(),
@@ -257,6 +319,7 @@ export const GetDashboardResponse = zod.object({
       isHome: zod.boolean(),
       venue: zod.string().nullish(),
       notes: zod.string().nullish(),
+      seasonId: zod.number().nullish(),
     })
     .nullish(),
   seasonRecord: zod.object({
@@ -290,6 +353,7 @@ export const GetDashboardResponse = zod.object({
       isHome: zod.boolean(),
       venue: zod.string().nullish(),
       notes: zod.string().nullish(),
+      seasonId: zod.number().nullish(),
     }),
   ),
 });

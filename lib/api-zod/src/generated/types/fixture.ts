@@ -18,4 +18,5 @@ export interface Fixture {
   isHome: boolean;
   venue?: string | null;
   notes?: string | null;
+  seasonId?: number | null;
 }

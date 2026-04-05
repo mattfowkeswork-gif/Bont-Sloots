@@ -1,6 +1,7 @@
 import { pgTable, text, serial, timestamp, boolean, integer, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { seasonsTable } from "./seasons";
 
 export const fixturesTable = pgTable("fixtures", {
   id: serial("id").primaryKey(),
@@ -14,6 +15,7 @@ export const fixturesTable = pgTable("fixtures", {
   isHome: boolean("is_home").notNull().default(true),
   venue: text("venue"),
   notes: text("notes"),
+  seasonId: integer("season_id").references(() => seasonsTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
