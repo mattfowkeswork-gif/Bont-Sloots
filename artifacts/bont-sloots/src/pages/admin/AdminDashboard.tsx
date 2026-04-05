@@ -10,6 +10,7 @@ import { AdminStats } from "./AdminStats";
 import { AdminAwards } from "./AdminAwards";
 import { AdminBulkFixtures } from "./AdminBulkFixtures";
 import { AdminSettings } from "./AdminSettings";
+import { AdminScout } from "./AdminScout";
 
 export function AdminDashboard() {
   const { isAuthenticated, logout } = useAuth();
@@ -49,6 +50,7 @@ export function AdminDashboard() {
             <TabsTrigger value="stats" className="py-2 px-3 text-xs">Stats</TabsTrigger>
             <TabsTrigger value="awards" className="py-2 px-3 text-xs">Awards</TabsTrigger>
             <TabsTrigger value="settings" className="py-2 px-3 text-xs">Settings</TabsTrigger>
+            <TabsTrigger value="scout" className="py-2 px-3 text-xs">Scout</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="fixtures" className="mt-0">
@@ -68,6 +70,9 @@ export function AdminDashboard() {
         </TabsContent>
         <TabsContent value="settings" className="mt-0">
           <AdminSettings />
+        </TabsContent>
+        <TabsContent value="scout" className="mt-0">
+          <AdminScout />
         </TabsContent>
       </Tabs>
     </div>

@@ -15,6 +15,7 @@ import settingsRouter from "./settings";
 import fixtureRatingsRouter from "./fixture_ratings";
 import fixtureValuesRouter from "./fixture_values";
 import adminRecalculateRouter from "./admin_recalculate";
+import scoutRouter from "./scout";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(settingsRouter);
 router.use(fixtureRatingsRouter);
 router.use(fixtureValuesRouter);
 router.use(adminRecalculateRouter);
+router.use(scoutRouter);
 
 export default router;
