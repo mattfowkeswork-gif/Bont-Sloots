@@ -22,6 +22,7 @@ export const ListPlayersResponseItem = zod.object({
   name: zod.string(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
@@ -47,6 +48,8 @@ export const GetPlayerResponse = zod.object({
   name: zod.string(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
+  isMuppet: zod.boolean(),
   createdAt: zod.coerce.date(),
   totalGoals: zod.number(),
   totalAssists: zod.number(),
@@ -94,6 +97,7 @@ export const UpdatePlayerResponse = zod.object({
   name: zod.string(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -479,6 +483,7 @@ export const GetSquadStatsResponseItem = zod.object({
   playerName: zod.string(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
+  photoUrl: zod.string().nullish(),
   apps: zod.number(),
   goals: zod.number(),
   assists: zod.number(),
@@ -495,6 +500,7 @@ export const GetSquadStatsResponseItem = zod.object({
     .nullish()
     .describe("Total value change from the most recent appearance"),
   isKing: zod.boolean(),
+  isMuppet: zod.boolean(),
 });
 export const GetSquadStatsResponse = zod.array(GetSquadStatsResponseItem);
 

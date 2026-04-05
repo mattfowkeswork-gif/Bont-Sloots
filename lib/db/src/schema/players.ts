@@ -7,6 +7,7 @@ export const playersTable = pgTable("players", {
   name: text("name").notNull(),
   position: text("position"),
   scoutingProfile: text("scouting_profile"),
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

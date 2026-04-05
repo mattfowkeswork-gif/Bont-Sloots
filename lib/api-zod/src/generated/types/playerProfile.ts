@@ -13,6 +13,8 @@ export interface PlayerProfile {
   name: string;
   position?: string | null;
   scoutingProfile?: string | null;
+  photoUrl?: string | null;
+  isMuppet: boolean;
   createdAt: Date;
   totalGoals: number;
   totalAssists: number;

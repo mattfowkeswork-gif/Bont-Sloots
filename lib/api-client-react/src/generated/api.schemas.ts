@@ -30,6 +30,7 @@ export interface Player {
   name: string;
   position?: string | null;
   scoutingProfile?: string | null;
+  photoUrl?: string | null;
   createdAt: string;
 }
 
@@ -62,6 +63,8 @@ export interface PlayerProfile {
   name: string;
   position?: string | null;
   scoutingProfile?: string | null;
+  photoUrl?: string | null;
+  isMuppet: boolean;
   createdAt: string;
   totalGoals: number;
   totalAssists: number;
@@ -230,6 +233,7 @@ export interface SquadStatRow {
   playerName: string;
   position?: string | null;
   scoutingProfile?: string | null;
+  photoUrl?: string | null;
   apps: number;
   goals: number;
   assists: number;
@@ -243,6 +247,7 @@ export interface SquadStatRow {
   /** Total value change from the most recent appearance */
   lastMatchChange?: number | null;
   isKing: boolean;
+  isMuppet: boolean;
 }
 
 export interface FixturePlayerEntry {

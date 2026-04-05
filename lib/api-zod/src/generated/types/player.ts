@@ -11,5 +11,6 @@ export interface Player {
   name: string;
   position?: string | null;
   scoutingProfile?: string | null;
+  photoUrl?: string | null;
   createdAt: Date;
 }

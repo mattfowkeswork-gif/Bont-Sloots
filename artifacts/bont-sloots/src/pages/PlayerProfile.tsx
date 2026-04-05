@@ -6,7 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import { useParams, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trophy, Star, AlertTriangle, ArrowLeft, Calendar, MessageSquare, Target, Shield, TrendingUp, TrendingDown, Minus, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -93,6 +93,12 @@ export function PlayerProfile() {
     : player.marketValue >= 5_000_000 ? "text-white"
     : "text-red-400";
 
+  const photoSrc = (player as any).photoUrl
+    ? `/api/storage${(player as any).photoUrl}`
+    : "/jersey-placeholder.svg";
+
+  const isMuppet = (player as any).isMuppet === true;
+
   return (
     <div className="space-y-6 pb-4">
       <Button
@@ -107,15 +113,29 @@ export function PlayerProfile() {
       {/* Hero Profile */}
       <div className="bg-card border border-border/50 rounded-xl p-6 relative overflow-hidden shadow-xl shadow-black/50">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
+
+        {/* Muppet banner */}
+        {isMuppet && (
+          <div className="relative mb-4 bg-red-950/60 border border-red-800/50 rounded-lg px-3 py-2 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <span className="text-xs font-bold text-red-400">Current Muppet of the Match 🤡</span>
+          </div>
+        )}
+
         <div className="relative flex flex-col items-center text-center">
-          <Avatar className="h-24 w-24 border-4 border-background mb-4 shadow-lg">
-            <AvatarFallback
-              className="text-white text-3xl font-black"
-              style={{ backgroundColor: getColorFromName(player.name) }}
-            >
-              {getInitials(player.name)}
-            </AvatarFallback>
-          </Avatar>
+          {/* Photo */}
+          <div className="h-28 w-28 rounded-full border-4 border-background mb-4 shadow-lg overflow-hidden flex-shrink-0">
+            <img
+              src={photoSrc}
+              alt={player.name}
+              className="w-full h-full object-cover"
+              style={isMuppet ? { filter: "grayscale(100%)" } : undefined}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/jersey-placeholder.svg";
+              }}
+            />
+          </div>
+
           <h1 className="text-2xl font-black text-white">{player.name}</h1>
           <div className="text-primary font-medium mt-1">{player.position || "Squad Player"}</div>
 

@@ -26,9 +26,9 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   if (seasonFixtureIds !== null && seasonFixtureIds.length === 0) {
     const result = players.map(p => ({
       playerId: p.id, playerName: p.name, position: p.position ?? null,
-      scoutingProfile: p.scoutingProfile ?? null,
+      scoutingProfile: p.scoutingProfile ?? null, photoUrl: p.photoUrl ?? null,
       apps: 0, goals: 0, assists: 0, motmVotes: 0, momAwards: 0, muppetAwards: 0,
-      marketValue: 5_000_000, avgRating: null, recentForm: [], lastMatchChange: null, isKing: false,
+      marketValue: 5_000_000, avgRating: null, recentForm: [], lastMatchChange: null, isKing: false, isMuppet: false,
     }));
     res.json(result);
     return;
@@ -151,6 +151,15 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     .innerJoin(fixturesTable, eq(playerValueChangesTable.fixtureId, fixturesTable.id))
     .orderBy(desc(fixturesTable.matchDate));
 
+  // Determine the current muppet: player who received the most recent "motm" award
+  const [latestMuppet] = await db
+    .select({ playerId: awardsTable.playerId })
+    .from(awardsTable)
+    .where(eq(awardsTable.type, "motm"))
+    .orderBy(desc(awardsTable.createdAt))
+    .limit(1);
+  const currentMuppetPlayerId = latestMuppet?.playerId ?? null;
+
   const result = players.map(p => {
     const apps = appsCounts.find(a => a.playerId === p.id)?.count ?? 0;
     const goals = goalCounts.find(g => g.playerId === p.id)?.count ?? 0;
@@ -159,6 +168,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     const momAwards = momCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const muppetAwards = muppetCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const isKing = (kingCounts.find(k => k.playerId === p.id)?.count ?? 0) > 0;
+    const isMuppet = currentMuppetPlayerId === p.id;
     const avgRatingRaw = avgRatings.find(r => r.playerId === p.id)?.avg;
     const avgRating = avgRatingRaw ? parseFloat(avgRatingRaw) : null;
 
@@ -179,6 +189,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       playerName: p.name,
       position: p.position ?? null,
       scoutingProfile: p.scoutingProfile ?? null,
+      photoUrl: p.photoUrl ?? null,
       apps,
       goals,
       assists,
@@ -190,6 +201,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       recentForm,
       lastMatchChange,
       isKing,
+      isMuppet,
     };
   });
 

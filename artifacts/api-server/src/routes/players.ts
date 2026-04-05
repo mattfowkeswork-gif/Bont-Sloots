@@ -18,6 +18,7 @@ router.get("/players", async (_req, res): Promise<void> => {
     name: p.name,
     position: p.position ?? null,
     scoutingProfile: p.scoutingProfile ?? null,
+    photoUrl: p.photoUrl ?? null,
     createdAt: p.createdAt,
   })));
 });
@@ -192,11 +193,22 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     };
   });
 
+  // Determine if this player is the current muppet (most recent muppet award belongs to this player)
+  const [latestMuppet] = await db
+    .select({ playerId: awardsTable.playerId })
+    .from(awardsTable)
+    .where(eq(awardsTable.type, "motm"))
+    .orderBy(desc(awardsTable.createdAt))
+    .limit(1);
+  const isMuppet = latestMuppet?.playerId === player.id;
+
   res.json({
     id: player.id,
     name: player.name,
     position: player.position ?? null,
     scoutingProfile: player.scoutingProfile ?? null,
+    photoUrl: player.photoUrl ?? null,
+    isMuppet,
     createdAt: player.createdAt,
     totalGoals,
     totalAssists,
