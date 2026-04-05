@@ -33,10 +33,9 @@ function formatValue(v: number) {
 
 function TrendIcon({ form }: { form: number[] }) {
   if (!form || form.length === 0) return <Minus className="w-4 h-4 text-muted-foreground" />;
-  const last = form[form.length - 1];
-  const first = form[0];
-  if (last > first) return <TrendingUp className="w-4 h-4 text-emerald-400" />;
-  if (last < first) return <TrendingDown className="w-4 h-4 text-red-400" />;
+  const net = form.reduce((s, v) => s + v, 0);
+  if (net > 0) return <TrendingUp className="w-4 h-4 text-emerald-400" />;
+  if (net < 0) return <TrendingDown className="w-4 h-4 text-red-400" />;
   return <Minus className="w-4 h-4 text-muted-foreground" />;
 }
 

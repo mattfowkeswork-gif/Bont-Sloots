@@ -34,11 +34,12 @@ function formatValue(v: number) {
 }
 
 function SparkLine({ data }: { data: number[] }) {
+  const net = (data ?? []).reduce((s, v) => s + v, 0);
+
   if (!data || data.length < 2) {
-    const net = data?.[0] ?? 0;
-    return net > 100_000
+    return net > 0
       ? <TrendingUp className="w-3 h-3 text-emerald-400" />
-      : net < 100_000
+      : net < 0
         ? <TrendingDown className="w-3 h-3 text-red-400" />
         : <Minus className="w-3 h-3 text-muted-foreground" />;
   }
@@ -55,9 +56,7 @@ function SparkLine({ data }: { data: number[] }) {
     return `${x},${y}`;
   }).join(" ");
 
-  const last = data[data.length - 1];
-  const first = data[0];
-  const trend = last > first ? "#34d399" : last < first ? "#f87171" : "#6b7280";
+  const trend = net > 0 ? "#34d399" : net < 0 ? "#f87171" : "#6b7280";
 
   return (
     <svg width={w} height={h} className="inline-block">
