@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and } from "drizzle-orm";
 import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable } from "@workspace/db";
 import {
   CreatePlayerBody,
@@ -146,6 +146,50 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .where(eq(playerRatingsTable.playerId, player.id));
   const avgRating = avgRatingRow?.avg ? parseFloat(avgRatingRow.avg) : null;
 
+  // Full match history: all appearances with fixture info, rating, goals, assists
+  const allApps = await db
+    .select({
+      fixtureId: fixturePlayersTable.fixtureId,
+      opponent: fixturesTable.opponent,
+      matchDate: fixturesTable.matchDate,
+      homeScore: fixturesTable.homeScore,
+      awayScore: fixturesTable.awayScore,
+      isHome: fixturesTable.isHome,
+    })
+    .from(fixturePlayersTable)
+    .innerJoin(fixturesTable, eq(fixturePlayersTable.fixtureId, fixturesTable.id))
+    .where(and(eq(fixturePlayersTable.playerId, player.id), eq(fixturePlayersTable.present, true)))
+    .orderBy(desc(fixturesTable.matchDate));
+
+  const matchRatings = await db
+    .select({ fixtureId: playerRatingsTable.fixtureId, rating: playerRatingsTable.rating })
+    .from(playerRatingsTable)
+    .where(eq(playerRatingsTable.playerId, player.id));
+
+  const goalsPerApp = await db
+    .select({ fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(and(eq(statsTable.playerId, player.id), eq(statsTable.type, "goal")))
+    .groupBy(statsTable.fixtureId);
+
+  const assistsPerApp = await db
+    .select({ fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(and(eq(statsTable.playerId, player.id), eq(statsTable.type, "assist")))
+    .groupBy(statsTable.fixtureId);
+
+  const matchHistory = allApps.map(app => ({
+    fixtureId: app.fixtureId,
+    opponent: app.opponent,
+    matchDate: app.matchDate,
+    homeScore: app.homeScore,
+    awayScore: app.awayScore,
+    isHome: app.isHome,
+    rating: matchRatings.find(r => r.fixtureId === app.fixtureId)?.rating ?? null,
+    goals: goalsPerApp.find(g => g.fixtureId === app.fixtureId)?.count ?? 0,
+    assists: assistsPerApp.find(a => a.fixtureId === app.fixtureId)?.count ?? 0,
+  }));
+
   res.json({
     id: player.id,
     name: player.name,
@@ -160,6 +204,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     marketValue,
     avgRating,
     recentForm,
+    matchHistory,
     comments,
     awardHistory: playerAwards.map(a => ({
       id: a.id,

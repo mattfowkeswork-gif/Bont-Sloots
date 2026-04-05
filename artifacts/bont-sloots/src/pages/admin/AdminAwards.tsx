@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useListFixtures, useListPlayers, useCreateAward, getListStatsQueryKey, getGetDashboardQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Star, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
+import { useState } from "react";
 
 export function AdminAwards() {
   const { data: fixtures } = useListFixtures();
@@ -17,7 +17,6 @@ export function AdminAwards() {
 
   const [fixtureId, setFixtureId] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
-  const [awardType, setAwardType] = useState<"mom" | "motm">("mom");
 
   const playedFixtures = fixtures?.filter(f => f.played) || [];
 
@@ -31,21 +30,28 @@ export function AdminAwards() {
       data: {
         fixtureId: Number(fixtureId),
         playerId: Number(playerId),
-        type: awardType
+        type: "motm",
       }
     }, {
       onSuccess: () => {
-        toast({ title: `${awardType === 'mom' ? 'MOM' : 'MOTM'} awarded successfully` });
+        toast({ title: "Muppet of the Match awarded" });
         queryClient.invalidateQueries({ queryKey: getListStatsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+        setFixtureId("");
+        setPlayerId("");
       }
     });
   };
 
   return (
     <div className="space-y-6">
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-300">
+        <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+        <span>Man of the Match is automatically awarded to the highest-rated player when match ratings are saved.</span>
+      </div>
+
       <div>
-        <h2 className="text-xl font-bold mb-4">Assign Awards</h2>
+        <h2 className="text-xl font-bold mb-4">Muppet of the Match</h2>
         <Card>
           <CardContent className="p-4 space-y-4">
             <div className="grid gap-2">
@@ -80,36 +86,13 @@ export function AdminAwards() {
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label>Award Type</Label>
-              <div className="flex gap-2">
-                <Button 
-                  type="button"
-                  variant={awardType === "mom" ? "default" : "outline"}
-                  className={`flex-1 ${awardType === 'mom' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : ''}`}
-                  onClick={() => setAwardType("mom")}
-                >
-                  <Star className={`w-4 h-4 mr-2 ${awardType === 'mom' ? 'text-white' : 'text-yellow-500'}`} fill={awardType === 'mom' ? 'currentColor' : 'none'} /> 
-                  MOM
-                </Button>
-                <Button 
-                  type="button"
-                  variant={awardType === "motm" ? "default" : "outline"}
-                  className={`flex-1 ${awardType === 'motm' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
-                  onClick={() => setAwardType("motm")}
-                >
-                  <AlertTriangle className={`w-4 h-4 mr-2 ${awardType === 'motm' ? 'text-white' : 'text-red-500'}`} /> 
-                  MOTM
-                </Button>
-              </div>
-            </div>
-
-            <Button 
-              onClick={handleAddAward} 
-              className="w-full mt-4"
+            <Button
+              onClick={handleAddAward}
+              className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white"
               disabled={!fixtureId || !playerId || createAward.isPending}
             >
-              {createAward.isPending ? "Saving..." : "Assign Award"}
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              {createAward.isPending ? "Saving..." : "Assign Muppet Award"}
             </Button>
           </CardContent>
         </Card>

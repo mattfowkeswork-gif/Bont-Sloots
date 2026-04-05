@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, playerRatingsTable, playersTable, fixturePlayersTable } from "@workspace/db";
+import { eq, and, desc } from "drizzle-orm";
+import { db, playerRatingsTable, playersTable, fixturePlayersTable, awardsTable, fixturesTable } from "@workspace/db";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -20,14 +20,12 @@ router.get("/fixtures/:id/ratings", async (req, res): Promise<void> => {
 
   const fixtureId = params.data.id;
 
-  // Get all present players for this fixture
   const presenceRows = await db
     .select({ playerId: fixturePlayersTable.playerId, playerName: playersTable.name })
     .from(fixturePlayersTable)
     .innerJoin(playersTable, eq(fixturePlayersTable.playerId, playersTable.id))
     .where(and(eq(fixturePlayersTable.fixtureId, fixtureId), eq(fixturePlayersTable.present, true)));
 
-  // Get existing ratings
   const ratingRows = await db
     .select()
     .from(playerRatingsTable)
@@ -50,6 +48,7 @@ router.put("/fixtures/:id/ratings", async (req, res): Promise<void> => {
 
   const fixtureId = params.data.id;
 
+  // Upsert each rating
   for (const { playerId, rating } of body.data.ratings) {
     const existing = await db
       .select()
@@ -63,6 +62,32 @@ router.put("/fixtures/:id/ratings", async (req, res): Promise<void> => {
         .where(and(eq(playerRatingsTable.fixtureId, fixtureId), eq(playerRatingsTable.playerId, playerId)));
     } else {
       await db.insert(playerRatingsTable).values({ fixtureId, playerId, rating: String(rating) });
+    }
+  }
+
+  // Auto-award MOM to the highest-rated player for this fixture
+  const allRatings = await db
+    .select()
+    .from(playerRatingsTable)
+    .where(eq(playerRatingsTable.fixtureId, fixtureId))
+    .orderBy(desc(playerRatingsTable.rating));
+
+  if (allRatings.length > 0) {
+    const top = allRatings[0];
+    const [fixture] = await db.select().from(fixturesTable).where(eq(fixturesTable.id, fixtureId));
+
+    if (fixture) {
+      // Remove any existing MOM award for this fixture
+      await db
+        .delete(awardsTable)
+        .where(and(eq(awardsTable.fixtureId, fixtureId), eq(awardsTable.type, "mom")));
+
+      // Create new MOM award for highest-rated player
+      await db.insert(awardsTable).values({
+        fixtureId,
+        playerId: top.playerId,
+        type: "mom",
+      });
     }
   }
 

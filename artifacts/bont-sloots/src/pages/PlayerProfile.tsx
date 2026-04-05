@@ -166,6 +166,64 @@ export function PlayerProfile() {
         </div>
       )}
 
+      {/* Match History */}
+      {(player as any).matchHistory && (player as any).matchHistory.length > 0 && (
+        <div>
+          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-muted-foreground" /> Match History
+          </h3>
+          <div className="rounded-xl border border-border/50 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-card border-b border-border/50">
+                  <th className="text-left p-2 pl-3 text-xs font-semibold text-muted-foreground">Opponent</th>
+                  <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Score</th>
+                  <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Gls</th>
+                  <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Ast</th>
+                  <th className="text-right p-2 pr-3 text-xs font-semibold text-muted-foreground">Rtg</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(player as any).matchHistory.map((match: any) => {
+                  const ratingNum = match.rating ? parseFloat(match.rating) : null;
+                  const ratingColor = ratingNum == null ? "text-muted-foreground"
+                    : ratingNum >= 8 ? "text-emerald-400"
+                    : ratingNum >= 6 ? "text-yellow-400"
+                    : ratingNum >= 4 ? "text-orange-400"
+                    : "text-red-400";
+                  return (
+                    <tr key={match.fixtureId} className="border-b border-border/20 hover:bg-secondary/20">
+                      <td className="p-2 pl-3">
+                        <div className="font-medium text-white text-xs whitespace-nowrap">vs {match.opponent}</div>
+                        <div className="text-[10px] text-muted-foreground">{format(new Date(match.matchDate), "d MMM yy")}</div>
+                      </td>
+                      <td className="p-2 text-right font-mono text-xs text-muted-foreground whitespace-nowrap">
+                        {match.homeScore != null && match.awayScore != null
+                          ? `${match.homeScore}–${match.awayScore}`
+                          : "–"}
+                      </td>
+                      <td className="p-2 text-right font-mono text-xs">
+                        {match.goals > 0
+                          ? <span className="text-primary font-bold">{match.goals}</span>
+                          : <span className="text-muted-foreground">0</span>}
+                      </td>
+                      <td className="p-2 text-right font-mono text-xs">
+                        {match.assists > 0
+                          ? <span className="text-white font-bold">{match.assists}</span>
+                          : <span className="text-muted-foreground">0</span>}
+                      </td>
+                      <td className={`p-2 pr-3 text-right font-mono text-xs font-bold ${ratingColor}`}>
+                        {ratingNum != null ? ratingNum.toFixed(1) : "–"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Award History */}
       <div>
         <h3 className="font-bold text-lg mb-3">Award History</h3>

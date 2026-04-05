@@ -26,7 +26,7 @@ function formatMarketValue(value: number) {
   return `£${value}`;
 }
 
-type SortKey = "playerName" | "apps" | "goals" | "assists" | "motmVotes" | "muppetAwards" | "marketValue";
+type SortKey = "playerName" | "apps" | "goals" | "assists" | "motmVotes" | "muppetAwards" | "marketValue" | "avgRating";
 type SortDir = "asc" | "desc";
 
 const COLUMNS: { key: SortKey; label: string; shortLabel: string }[] = [
@@ -34,6 +34,7 @@ const COLUMNS: { key: SortKey; label: string; shortLabel: string }[] = [
   { key: "apps", label: "Apps", shortLabel: "Apps" },
   { key: "goals", label: "Goals", shortLabel: "Gls" },
   { key: "assists", label: "Assists", shortLabel: "Ast" },
+  { key: "avgRating", label: "Avg Rating", shortLabel: "Rtg" },
   { key: "motmVotes", label: "MOTM", shortLabel: "MOTM" },
   { key: "muppetAwards", label: "Muppet", shortLabel: "Mup" },
   { key: "marketValue", label: "Market Value", shortLabel: "Value" },
@@ -60,12 +61,14 @@ export function Leaderboard() {
   };
 
   const sorted = squadStats ? [...squadStats].sort((a, b) => {
-    const aVal = a[sortKey];
-    const bVal = b[sortKey];
+    const aVal = (a as any)[sortKey];
+    const bVal = (b as any)[sortKey];
     if (typeof aVal === "string" && typeof bVal === "string") {
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
-    return sortDir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    const aNum = aVal ?? -Infinity;
+    const bNum = bVal ?? -Infinity;
+    return sortDir === "asc" ? aNum - bNum : bNum - aNum;
   }) : [];
 
   const SortIcon = ({ col }: { col: SortKey }) => {
@@ -146,6 +149,9 @@ export function Leaderboard() {
                   <td className="p-2 text-right font-mono text-white">{player.apps}</td>
                   <td className="p-2 text-right font-mono text-white">{player.goals}</td>
                   <td className="p-2 text-right font-mono text-white">{player.assists}</td>
+                  <td className="p-2 text-right font-mono text-yellow-400">
+                    {(player as any).avgRating != null ? Number((player as any).avgRating).toFixed(1) : <span className="text-muted-foreground text-xs">–</span>}
+                  </td>
                   <td className="p-2 text-right font-mono text-yellow-400">{player.motmVotes}</td>
                   <td className="p-2 text-right font-mono text-red-400">{player.muppetAwards}</td>
                   <td className="p-2 text-right whitespace-nowrap">
@@ -157,7 +163,7 @@ export function Leaderboard() {
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
+                  <td colSpan={9} className="text-center py-10 text-muted-foreground text-sm">
                     No squad data yet.
                   </td>
                 </tr>
