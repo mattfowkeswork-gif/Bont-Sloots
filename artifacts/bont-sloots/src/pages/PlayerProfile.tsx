@@ -7,9 +7,10 @@ import {
 import { useParams, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Trophy, Star, AlertTriangle, ArrowLeft, Calendar, MessageSquare, Target, Shield, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Trophy, Star, AlertTriangle, ArrowLeft, Calendar, MessageSquare, Target, Shield, TrendingUp, TrendingDown, Minus, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { useState } from "react";
 
 function getColorFromName(name: string) {
   let hash = 0;
@@ -57,9 +58,18 @@ function MilestoneBadges({ goals, apps, motmVotes }: { goals: number; apps: numb
   );
 }
 
+function formatValueChange(n: number) {
+  const abs = Math.abs(n);
+  const sign = n >= 0 ? "+" : "-";
+  if (abs >= 1_000_000) return `${sign}£${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sign}£${Math.round(abs / 1_000)}k`;
+  return `${sign}£${abs}`;
+}
+
 export function PlayerProfile() {
   const { id } = useParams();
   const [_, setLocation] = useLocation();
+  const [expandedMatch, setExpandedMatch] = useState<number | null>(null);
   const { data: player, isLoading } = useGetPlayer(Number(id), {
     query: { queryKey: getGetPlayerQueryKey(Number(id)) }
   });
@@ -172,54 +182,96 @@ export function PlayerProfile() {
           <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-muted-foreground" /> Match History
           </h3>
-          <div className="rounded-xl border border-border/50 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-card border-b border-border/50">
-                  <th className="text-left p-2 pl-3 text-xs font-semibold text-muted-foreground">Opponent</th>
-                  <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Score</th>
-                  <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Gls</th>
-                  <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Ast</th>
-                  <th className="text-right p-2 pr-3 text-xs font-semibold text-muted-foreground">Rtg</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(player as any).matchHistory.map((match: any) => {
-                  const ratingNum = match.rating ? parseFloat(match.rating) : null;
-                  const ratingColor = ratingNum == null ? "text-muted-foreground"
-                    : ratingNum >= 8 ? "text-emerald-400"
-                    : ratingNum >= 6 ? "text-yellow-400"
-                    : ratingNum >= 4 ? "text-orange-400"
-                    : "text-red-400";
-                  return (
-                    <tr key={match.fixtureId} className="border-b border-border/20 hover:bg-secondary/20">
-                      <td className="p-2 pl-3">
-                        <div className="font-medium text-white text-xs whitespace-nowrap">vs {match.opponent}</div>
-                        <div className="text-[10px] text-muted-foreground">{format(new Date(match.matchDate), "d MMM yy")}</div>
-                      </td>
-                      <td className="p-2 text-right font-mono text-xs text-muted-foreground whitespace-nowrap">
-                        {match.homeScore != null && match.awayScore != null
-                          ? `${match.homeScore}–${match.awayScore}`
-                          : "–"}
-                      </td>
-                      <td className="p-2 text-right font-mono text-xs">
-                        {match.goals > 0
-                          ? <span className="text-primary font-bold">{match.goals}</span>
-                          : <span className="text-muted-foreground">0</span>}
-                      </td>
-                      <td className="p-2 text-right font-mono text-xs">
-                        {match.assists > 0
-                          ? <span className="text-white font-bold">{match.assists}</span>
-                          : <span className="text-muted-foreground">0</span>}
-                      </td>
-                      <td className={`p-2 pr-3 text-right font-mono text-xs font-bold ${ratingColor}`}>
-                        {ratingNum != null ? ratingNum.toFixed(1) : "–"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <p className="text-xs text-muted-foreground mb-3">Tap a match to see value breakdown</p>
+          <div className="space-y-2">
+            {(player as any).matchHistory.map((match: any) => {
+              const ratingNum = match.rating ? parseFloat(match.rating) : null;
+              const ratingColor = ratingNum == null ? "text-muted-foreground"
+                : ratingNum >= 8 ? "text-emerald-400"
+                : ratingNum >= 6 ? "text-yellow-400"
+                : ratingNum >= 4 ? "text-orange-400"
+                : "text-red-400";
+              const hasValue = match.valueChange != null;
+              const valueColor = match.valueChange > 0 ? "text-green-400"
+                : match.valueChange < 0 ? "text-red-400"
+                : "text-muted-foreground";
+              const isExpanded = expandedMatch === match.fixtureId;
+
+              return (
+                <div key={match.fixtureId} className="rounded-xl border border-border/50 overflow-hidden">
+                  {/* Main row */}
+                  <div
+                    className={`flex items-center gap-2 p-3 bg-card ${hasValue ? "cursor-pointer hover:bg-secondary/30 active:bg-secondary/50" : ""} transition-colors`}
+                    onClick={() => hasValue && setExpandedMatch(isExpanded ? null : match.fixtureId)}
+                  >
+                    {/* Date + opponent */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-white text-xs whitespace-nowrap">vs {match.opponent}</span>
+                        {match.isKing && (
+                          <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {format(new Date(match.matchDate), "d MMM yy")}
+                        {match.homeScore != null && match.awayScore != null && (
+                          <span className="ml-2 font-mono">{match.homeScore}–{match.awayScore}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 text-[11px] font-mono flex-shrink-0">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[9px] text-muted-foreground uppercase">Gls</span>
+                        <span className={match.goals > 0 ? "text-primary font-bold" : "text-muted-foreground"}>{match.goals}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-[9px] text-muted-foreground uppercase">Ast</span>
+                        <span className={match.assists > 0 ? "text-white font-bold" : "text-muted-foreground"}>{match.assists}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-[9px] text-muted-foreground uppercase">Rtg</span>
+                        <span className={`font-bold ${ratingColor}`}>{ratingNum != null ? ratingNum.toFixed(1) : "–"}</span>
+                      </div>
+                    </div>
+
+                    {/* Value change */}
+                    {hasValue && (
+                      <div className={`flex items-center gap-1 text-xs font-black flex-shrink-0 min-w-[60px] justify-end ${valueColor}`}>
+                        {match.valueChange > 0 ? <TrendingUp className="w-3 h-3" /> : match.valueChange < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                        {formatValueChange(match.valueChange)}
+                      </div>
+                    )}
+
+                    {/* Expand chevron */}
+                    {hasValue && (
+                      <div className="text-muted-foreground flex-shrink-0">
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Expanded breakdown */}
+                  {isExpanded && match.valueBreakdown && (
+                    <div className="border-t border-border/30 bg-zinc-900 p-3 space-y-1.5">
+                      {(match.valueBreakdown as any[]).map((item: any, i: number) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className={item.amount >= 0 ? "text-green-400 font-mono" : "text-red-400 font-mono"}>
+                            {item.amount >= 0 ? "+" : ""}£{Math.abs(item.amount / 1000).toFixed(0)}k
+                          </span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-xs font-black pt-1.5 border-t border-border/30">
+                        <span className="text-white">Net Change</span>
+                        <span className={valueColor}>{formatValueChange(match.valueChange)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

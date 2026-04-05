@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and } from "drizzle-orm";
-import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable } from "@workspace/db";
+import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable, playerValueChangesTable } from "@workspace/db";
 import {
   CreatePlayerBody,
   GetPlayerParams,
@@ -95,42 +95,38 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .where(eq(motmVotesTable.playerId, player.id));
   const motmVotes = motmVotesRow?.count ?? 0;
 
-  const marketValue = 5_000_000
-    + apps * 100_000
-    + (totalGoals + totalAssists + motmVotes) * 500_000
-    - motmCount * 1_000_000;
+  // Market value from player_value_changes table (base £5M + sum of all changes)
+  const allValueChanges = await db
+    .select({
+      fixtureId: playerValueChangesTable.fixtureId,
+      totalChange: playerValueChangesTable.totalChange,
+      breakdown: playerValueChangesTable.breakdown,
+      isKing: playerValueChangesTable.isKing,
+      matchDate: fixturesTable.matchDate,
+    })
+    .from(playerValueChangesTable)
+    .innerJoin(fixturesTable, eq(fixturesTable.id, playerValueChangesTable.fixtureId))
+    .where(eq(playerValueChangesTable.playerId, player.id))
+    .orderBy(desc(fixturesTable.matchDate));
 
-  // Recent form: last 3 appearances with per-game value delta
-  const last3Apps = await db
-    .select({ fixtureId: fixturePlayersTable.fixtureId, matchDate: fixturesTable.matchDate })
-    .from(fixturePlayersTable)
-    .innerJoin(fixturesTable, eq(fixturePlayersTable.fixtureId, fixturesTable.id))
-    .where(eq(fixturePlayersTable.playerId, player.id))
-    .orderBy(desc(fixturesTable.matchDate))
-    .limit(3);
+  const totalValueChange = allValueChanges.reduce((sum, r) => sum + (r.totalChange ?? 0), 0);
+  const marketValue = 5_000_000 + totalValueChange;
 
-  const recentForm: number[] = [];
-  for (const app of [...last3Apps].reverse()) {
-    const [gRow] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(statsTable)
-      .where(eq(statsTable.playerId, player.id));
-    const [aRow] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(statsTable)
-      .where(eq(statsTable.playerId, player.id));
-    const [mRow] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(motmVotesTable)
-      .where(eq(motmVotesTable.playerId, player.id));
-    const [mupRow] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(awardsTable)
-      .where(eq(awardsTable.playerId, player.id));
-
-    // Simplified: just use appearance delta for now (full per-fixture stats computed in squad_stats)
-    recentForm.push(100_000);
+  // Build value change map keyed by fixtureId for quick lookup
+  const valueChangeMap = new Map<number, { totalChange: number; breakdown: any[]; isKing: boolean }>();
+  for (const vc of allValueChanges) {
+    valueChangeMap.set(vc.fixtureId, {
+      totalChange: vc.totalChange ?? 0,
+      breakdown: (vc.breakdown as any[]) ?? [],
+      isKing: vc.isKing ?? false,
+    });
   }
+
+  // Recent form: last 3 value changes (oldest-first) for sparkline
+  const recentForm = [...allValueChanges]
+    .slice(0, 3)
+    .reverse()
+    .map(vc => vc.totalChange ?? 0);
 
   // Teammate comments
   const comments = await db
@@ -178,17 +174,23 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .where(and(eq(statsTable.playerId, player.id), eq(statsTable.type, "assist")))
     .groupBy(statsTable.fixtureId);
 
-  const matchHistory = allApps.map(app => ({
-    fixtureId: app.fixtureId,
-    opponent: app.opponent,
-    matchDate: app.matchDate,
-    homeScore: app.homeScore,
-    awayScore: app.awayScore,
-    isHome: app.isHome,
-    rating: matchRatings.find(r => r.fixtureId === app.fixtureId)?.rating ?? null,
-    goals: goalsPerApp.find(g => g.fixtureId === app.fixtureId)?.count ?? 0,
-    assists: assistsPerApp.find(a => a.fixtureId === app.fixtureId)?.count ?? 0,
-  }));
+  const matchHistory = allApps.map(app => {
+    const vc = valueChangeMap.get(app.fixtureId);
+    return {
+      fixtureId: app.fixtureId,
+      opponent: app.opponent,
+      matchDate: app.matchDate,
+      homeScore: app.homeScore,
+      awayScore: app.awayScore,
+      isHome: app.isHome,
+      rating: matchRatings.find(r => r.fixtureId === app.fixtureId)?.rating ?? null,
+      goals: goalsPerApp.find(g => g.fixtureId === app.fixtureId)?.count ?? 0,
+      assists: assistsPerApp.find(a => a.fixtureId === app.fixtureId)?.count ?? 0,
+      valueChange: vc?.totalChange ?? null,
+      valueBreakdown: vc?.breakdown ?? null,
+      isKing: vc?.isKing ?? false,
+    };
+  });
 
   res.json({
     id: player.id,
