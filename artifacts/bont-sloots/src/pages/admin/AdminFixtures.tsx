@@ -4,7 +4,7 @@ import {
   getListFixturesQueryKey, useGetFixturePlayers, useSetFixturePlayers,
   getGetFixturePlayersQueryKey,
   useGetFixtureRatings, useSetFixtureRatings, getGetFixtureRatingsQueryKey,
-  getGetDashboardQueryKey,
+  getGetDashboardQueryKey, getGetSquadStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -150,6 +150,7 @@ function RatingsDialog({ fixtureId, opponent }: { fixtureId: number; opponent: s
         queryClient.invalidateQueries({ queryKey: getGetFixtureRatingsQueryKey(fixtureId) });
         queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListFixturesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
         const momWinner = (data as any)?.momWinner;
         toast({
           title: momWinner ? `Ratings saved — MOM: ${momWinner}` : "Ratings saved",
