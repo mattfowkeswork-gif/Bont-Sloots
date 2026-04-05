@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Bont Sloots FC API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: players
+    description: Player management
+  - name: fixtures
+    description: Fixture management
+  - name: awards
+    description: MOM/MOTM awards
+  - name: stats
+    description: Goals & assists stats
+  - name: admin
+    description: Admin operations
+  - name: dashboard
+    description: Dashboard summary
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,309 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /players:
+    get:
+      operationId: listPlayers
+      tags: [players]
+      summary: List all players
+      responses:
+        "200":
+          description: Players list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
+    post:
+      operationId: createPlayer
+      tags: [players]
+      summary: Create a player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+
+  /players/{id}:
+    get:
+      operationId: getPlayer
+      tags: [players]
+      summary: Get player profile with stats and award history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProfile"
+    put:
+      operationId: updatePlayer
+      tags: [players]
+      summary: Update a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+    delete:
+      operationId: deletePlayer
+      tags: [players]
+      summary: Delete a player
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /fixtures:
+    get:
+      operationId: listFixtures
+      tags: [fixtures]
+      summary: List all fixtures
+      responses:
+        "200":
+          description: Fixtures list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fixture"
+    post:
+      operationId: createFixture
+      tags: [fixtures]
+      summary: Create a fixture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFixtureBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fixture"
+
+  /fixtures/{id}:
+    get:
+      operationId: getFixture
+      tags: [fixtures]
+      summary: Get fixture details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fixture
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fixture"
+    put:
+      operationId: updateFixture
+      tags: [fixtures]
+      summary: Update a fixture (scores, KO time, TBC flag)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFixtureBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fixture"
+    delete:
+      operationId: deleteFixture
+      tags: [fixtures]
+      summary: Delete a fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /stats:
+    get:
+      operationId: listStats
+      tags: [stats]
+      summary: Get goals and assists leaderboard
+      responses:
+        "200":
+          description: Stats leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerStat"
+    post:
+      operationId: createStat
+      tags: [stats]
+      summary: Add a stat entry (goal or assist) for a player in a fixture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStatBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatEntry"
+
+  /stats/{id}:
+    delete:
+      operationId: deleteStat
+      tags: [stats]
+      summary: Delete a stat entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /awards:
+    get:
+      operationId: listAwards
+      tags: [awards]
+      summary: List all awards (MOM and MOTM)
+      responses:
+        "200":
+          description: Awards list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Award"
+    post:
+      operationId: createAward
+      tags: [awards]
+      summary: Assign an award to a player for a fixture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAwardBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Award"
+
+  /awards/{id}:
+    delete:
+      operationId: deleteAward
+      tags: [awards]
+      summary: Delete an award
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary (next fixture, season record, top scorer)
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login with password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginBody"
+      responses:
+        "200":
+          description: Login result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResult"
+        "401":
+          description: Unauthorized
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +349,323 @@ components:
       required:
         - status
 
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        position:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+
+    PlayerProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        position:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        totalGoals:
+          type: integer
+        totalAssists:
+          type: integer
+        momCount:
+          type: integer
+        motmCount:
+          type: integer
+        awardHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/Award"
+      required:
+        - id
+        - name
+        - createdAt
+        - totalGoals
+        - totalAssists
+        - momCount
+        - motmCount
+        - awardHistory
+
+    PlayerStat:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        playerName:
+          type: string
+        totalGoals:
+          type: integer
+        totalAssists:
+          type: integer
+        momCount:
+          type: integer
+        motmCount:
+          type: integer
+      required:
+        - playerId
+        - playerName
+        - totalGoals
+        - totalAssists
+        - momCount
+        - motmCount
+
+    CreatePlayerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        position:
+          type: string
+          nullable: true
+      required:
+        - name
+
+    Fixture:
+      type: object
+      properties:
+        id:
+          type: integer
+        opponent:
+          type: string
+        matchDate:
+          type: string
+          format: date
+        kickoffTime:
+          type: string
+          nullable: true
+        kickoffTbc:
+          type: boolean
+        homeScore:
+          type: integer
+          nullable: true
+        awayScore:
+          type: integer
+          nullable: true
+        played:
+          type: boolean
+        isHome:
+          type: boolean
+        venue:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - id
+        - opponent
+        - matchDate
+        - kickoffTbc
+        - played
+        - isHome
+
+    CreateFixtureBody:
+      type: object
+      properties:
+        opponent:
+          type: string
+        matchDate:
+          type: string
+          format: date
+        kickoffTime:
+          type: string
+          nullable: true
+        kickoffTbc:
+          type: boolean
+        isHome:
+          type: boolean
+        venue:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - opponent
+        - matchDate
+        - kickoffTbc
+        - isHome
+
+    UpdateFixtureBody:
+      type: object
+      properties:
+        opponent:
+          type: string
+        matchDate:
+          type: string
+          format: date
+        kickoffTime:
+          type: string
+          nullable: true
+        kickoffTbc:
+          type: boolean
+        homeScore:
+          type: integer
+          nullable: true
+        awayScore:
+          type: integer
+          nullable: true
+        played:
+          type: boolean
+        isHome:
+          type: boolean
+        venue:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    StatEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        fixtureId:
+          type: integer
+        type:
+          type: string
+          enum: [goal, assist]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - playerId
+        - fixtureId
+        - type
+        - createdAt
+
+    CreateStatBody:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        fixtureId:
+          type: integer
+        type:
+          type: string
+          enum: [goal, assist]
+      required:
+        - playerId
+        - fixtureId
+        - type
+
+    Award:
+      type: object
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+        playerName:
+          type: string
+        fixtureId:
+          type: integer
+        fixtureOpponent:
+          type: string
+        type:
+          type: string
+          enum: [mom, motm]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - playerId
+        - playerName
+        - fixtureId
+        - fixtureOpponent
+        - type
+        - createdAt
+
+    CreateAwardBody:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        fixtureId:
+          type: integer
+        type:
+          type: string
+          enum: [mom, motm]
+      required:
+        - playerId
+        - fixtureId
+        - type
+
+    Dashboard:
+      type: object
+      properties:
+        nextFixture:
+          $ref: "#/components/schemas/Fixture"
+          nullable: true
+        seasonRecord:
+          type: object
+          properties:
+            played:
+              type: integer
+            wins:
+              type: integer
+            draws:
+              type: integer
+            losses:
+              type: integer
+            goalsFor:
+              type: integer
+            goalsAgainst:
+              type: integer
+          required:
+            - played
+            - wins
+            - draws
+            - losses
+            - goalsFor
+            - goalsAgainst
+        topScorer:
+          $ref: "#/components/schemas/PlayerStat"
+          nullable: true
+        recentResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/Fixture"
+      required:
+        - seasonRecord
+        - recentResults
+
+    AdminLoginBody:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+
+    AdminLoginResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        token:
+          type: string
+          nullable: true
+      required:
+        - success

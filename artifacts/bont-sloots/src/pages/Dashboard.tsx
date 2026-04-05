@@ -1,0 +1,219 @@
+import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ShieldAlert, MapPin, Calendar, Clock, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
+import { format, differenceInSeconds } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function Countdown({ targetDate }: { targetDate: string }) {
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  }>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const target = new Date(targetDate);
+      const totalSeconds = differenceInSeconds(target, now);
+
+      if (totalSeconds <= 0) {
+        clearInterval(timer);
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      const days = Math.floor(totalSeconds / (3600 * 24));
+      const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = Math.floor(totalSeconds % 60);
+
+      setTimeLeft({ days, hours, minutes, seconds });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return (
+    <div className="grid grid-cols-4 gap-2 text-center mt-4">
+      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
+        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.days).padStart(2, '0')}</div>
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Days</div>
+      </div>
+      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
+        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.hours).padStart(2, '0')}</div>
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Hours</div>
+      </div>
+      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
+        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.minutes).padStart(2, '0')}</div>
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Mins</div>
+      </div>
+      <div className="bg-secondary/50 rounded-lg p-2 border border-border/50">
+        <div className="text-2xl font-bold font-mono text-primary">{String(timeLeft.seconds).padStart(2, '0')}</div>
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Secs</div>
+      </div>
+    </div>
+  );
+}
+
+export function Dashboard() {
+  const { data: dashboard, isLoading } = useGetDashboard({
+    query: { queryKey: getGetDashboardQueryKey() }
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-64 w-full rounded-xl bg-card" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-32 rounded-xl bg-card" />
+          <Skeleton className="h-32 rounded-xl bg-card" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboard) return null;
+
+  return (
+    <div className="space-y-6 pb-4">
+      {/* Hero: Next Fixture */}
+      {dashboard.nextFixture ? (
+        <Card className="border-primary/20 bg-card overflow-hidden relative shadow-lg shadow-primary/5">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">Next Match</Badge>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {format(new Date(dashboard.nextFixture.matchDate), "MMM do, yyyy")}
+              </div>
+            </div>
+            <CardTitle className="text-3xl font-black mt-2 text-white">
+              vs {dashboard.nextFixture.opponent}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3 text-sm text-muted-foreground mt-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                <span className="text-foreground font-medium">
+                  {dashboard.nextFixture.kickoffTbc ? "TBC" : dashboard.nextFixture.kickoffTime || "TBC"}
+                </span>
+              </div>
+              {dashboard.nextFixture.venue && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-primary" />
+                  <span>{dashboard.nextFixture.venue}</span>
+                </div>
+              )}
+            </div>
+
+            {dashboard.nextFixture.matchDate && (
+              <Countdown targetDate={`${dashboard.nextFixture.matchDate}T${dashboard.nextFixture.kickoffTime || '00:00'}:00`} />
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-card border-border/50">
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <ShieldAlert className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No upcoming fixtures.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Season Record */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground font-normal">Season Form</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-white">
+              {dashboard.seasonRecord.wins}<span className="text-muted-foreground text-xl font-normal mx-1">W</span>
+              {dashboard.seasonRecord.draws}<span className="text-muted-foreground text-xl font-normal mx-1">D</span>
+              {dashboard.seasonRecord.losses}<span className="text-muted-foreground text-xl font-normal mx-1">L</span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              GD: {dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst > 0 ? "+" : ""}{dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst} ({dashboard.seasonRecord.goalsFor}F / {dashboard.seasonRecord.goalsAgainst}A)
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Scorer */}
+        <Card className="bg-card border-border/50 relative overflow-hidden">
+          <div className="absolute -right-4 -bottom-4 opacity-5">
+            <Trophy className="w-24 h-24" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground font-normal">Top Scorer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dashboard.topScorer ? (
+              <>
+                <div className="text-xl font-bold text-white truncate">{dashboard.topScorer.playerName}</div>
+                <div className="text-2xl font-black text-primary mt-1">
+                  {dashboard.topScorer.totalGoals} <span className="text-sm font-normal text-muted-foreground">goals</span>
+                </div>
+              </>
+            ) : (
+              <div className="text-muted-foreground">No data</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Results */}
+      <div>
+        <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+          Recent Results
+        </h3>
+        <div className="space-y-3">
+          {dashboard.recentResults.length > 0 ? (
+            dashboard.recentResults.map((fixture) => {
+              const isWin = (fixture.isHome && fixture.homeScore! > fixture.awayScore!) || (!fixture.isHome && fixture.awayScore! > fixture.homeScore!);
+              const isDraw = fixture.homeScore === fixture.awayScore;
+              const isLoss = !isWin && !isDraw;
+              const bsScore = fixture.isHome ? fixture.homeScore : fixture.awayScore;
+              const oppScore = fixture.isHome ? fixture.awayScore : fixture.homeScore;
+
+              return (
+                <Card key={fixture.id} className="bg-card border-border/50 overflow-hidden">
+                  <div className="flex items-center">
+                    <div className={`w-1.5 self-stretch ${isWin ? 'bg-green-500' : isDraw ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                    <div className="flex-1 p-3 flex justify-between items-center">
+                      <div>
+                        <div className="text-sm font-bold text-white">vs {fixture.opponent}</div>
+                        <div className="text-xs text-muted-foreground">{format(new Date(fixture.matchDate), "MMM d")}</div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <span className="font-mono font-bold text-lg">{bsScore} - {oppScore}</span>
+                        </div>
+                        <Badge variant="outline" className={
+                          isWin ? 'text-green-500 border-green-500/20 bg-green-500/10' : 
+                          isDraw ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/10' : 
+                          'text-red-500 border-red-500/20 bg-red-500/10'
+                        }>
+                          {isWin ? 'W' : isDraw ? 'D' : 'L'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          ) : (
+            <div className="text-center py-6 text-muted-foreground text-sm bg-card rounded-xl border border-border/50">
+              No recent results
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
