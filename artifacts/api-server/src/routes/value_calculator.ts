@@ -21,11 +21,11 @@ function getRatingBonus(rating: number | null): { amount: number; label: string 
 }
 
 function getDefBonus(conceded: number): { amount: number; label: string } {
-  if (conceded === 0) return { amount: 1_500_000, label: "Clean Sheet" };
-  if (conceded <= 2) return { amount: 750_000, label: `Solid Defence (${conceded} conceded)` };
-  if (conceded <= 5) return { amount: 100_000, label: `Held On (${conceded} conceded)` };
-  if (conceded <= 9) return { amount: -500_000, label: `Defensive Disaster (${conceded} conceded)` };
-  return { amount: -1_500_000, label: `Defensive Catastrophe (${conceded} conceded)` };
+  if (conceded === 0) return { amount: 1_000_000, label: "Clean Sheet" };
+  if (conceded <= 2) return { amount: 500_000, label: `Elite Defence (${conceded} conceded)` };
+  if (conceded <= 5) return { amount: 0, label: `Dead Zone (${conceded} conceded)` };
+  if (conceded <= 9) return { amount: -500_000, label: `Defensive Collapse (${conceded} conceded)` };
+  return { amount: -1_500_000, label: `Sunday League Nightmare (${conceded} conceded)` };
 }
 
 export async function recalculateFixtureValues(fixtureId?: number): Promise<void> {
