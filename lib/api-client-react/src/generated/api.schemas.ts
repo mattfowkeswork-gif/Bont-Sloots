@@ -88,6 +88,7 @@ export interface Fixture {
   venue?: string | null;
   notes?: string | null;
   seasonId?: number | null;
+  votingClosesAt?: string | null;
 }
 
 export interface CreateFixtureBody {
@@ -183,6 +184,63 @@ export interface AdminLoginResult {
   token?: string | null;
 }
 
+export interface SquadStatRow {
+  playerId: number;
+  playerName: string;
+  position?: string | null;
+  apps: number;
+  goals: number;
+  assists: number;
+  motmVotes: number;
+  muppetAwards: number;
+  marketValue: number;
+}
+
+export interface FixturePlayerEntry {
+  playerId: number;
+  playerName: string;
+  present: boolean;
+}
+
+export interface SetFixturePlayersBody {
+  /** IDs of players who were present */
+  playerIds: number[];
+}
+
+export interface BulkCreateFixturesBody {
+  /** Newline-separated fixture text, e.g. "12/04 vs Real Sosobad" */
+  text: string;
+  seasonId?: number | null;
+  defaultYear?: number | null;
+}
+
+export type VoteStatusResultsItem = {
+  playerId: number;
+  playerName: string;
+  votes: number;
+};
+
+export interface VoteStatus {
+  isOpen: boolean;
+  votingClosesAt?: string | null;
+  hasVoted: boolean;
+  eligiblePlayers: FixturePlayerEntry[];
+  results: VoteStatusResultsItem[];
+}
+
+export interface CastVoteBody {
+  playerId: number;
+  deviceId: string;
+}
+
 export type ListStatsParams = {
   seasonId?: number;
+};
+
+export type GetSquadStatsParams = {
+  seasonId?: number;
+};
+
+export type GetVoteStatusParams = {
+  deviceId?: string;
 };

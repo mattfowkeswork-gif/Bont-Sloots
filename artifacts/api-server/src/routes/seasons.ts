@@ -1,13 +1,18 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, seasonsTable } from "@workspace/db";
-import {
-  CreateSeasonBody,
-  UpdateSeasonParams,
-  DeleteSeasonParams,
-} from "@workspace/api-zod";
+import { z } from "zod";
 
 const router: IRouter = Router();
+
+const IdParam = z.object({ id: z.coerce.number().int().positive() });
+
+const CreateSeasonBody = z.object({
+  name: z.string().min(1),
+  startDate: z.string(),
+  endDate: z.string(),
+  isCurrent: z.boolean().default(false),
+});
 
 function mapSeason(s: typeof seasonsTable.$inferSelect) {
   return {
@@ -32,7 +37,6 @@ router.post("/seasons", async (req, res): Promise<void> => {
     return;
   }
 
-  // If this season is marked current, unset all others
   if (parsed.data.isCurrent) {
     await db.update(seasonsTable).set({ isCurrent: false });
   }
@@ -48,9 +52,9 @@ router.post("/seasons", async (req, res): Promise<void> => {
 });
 
 router.put("/seasons/:id", async (req, res): Promise<void> => {
-  const params = UpdateSeasonParams.safeParse(req.params);
+  const params = IdParam.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: "Invalid season ID" });
     return;
   }
   const parsed = CreateSeasonBody.safeParse(req.body);
@@ -59,13 +63,8 @@ router.put("/seasons/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  // If this season is marked current, unset all others first
   if (parsed.data.isCurrent) {
-    await db.update(seasonsTable).set({ isCurrent: false }).where(
-      eq(seasonsTable.id, params.data.id)
-        ? undefined as never
-        : eq(seasonsTable.id, params.data.id)
-    );
+    // Unset all other seasons as current
     await db.update(seasonsTable).set({ isCurrent: false });
   }
 
@@ -88,9 +87,9 @@ router.put("/seasons/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/seasons/:id", async (req, res): Promise<void> => {
-  const params = DeleteSeasonParams.safeParse(req.params);
+  const params = IdParam.safeParse(req.params);
   if (!params.success) {
-    res.status(400).json({ error: params.error.message });
+    res.status(400).json({ error: "Invalid season ID" });
     return;
   }
   const [season] = await db.delete(seasonsTable).where(eq(seasonsTable.id, params.data.id)).returning();

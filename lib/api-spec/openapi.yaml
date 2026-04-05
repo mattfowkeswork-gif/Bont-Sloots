@@ -24,6 +24,10 @@ tags:
     description: Dashboard summary
   - name: seasons
     description: Season management
+  - name: squad-stats
+    description: Squad stats and leaderboard
+  - name: motm
+    description: MOTM voting
 
 paths:
   /healthz:
@@ -396,6 +400,147 @@ paths:
               schema:
                 $ref: "#/components/schemas/Dashboard"
 
+  /squad-stats:
+    get:
+      operationId: getSquadStats
+      tags: [squad-stats]
+      summary: Get all players with aggregated stats and market value
+      parameters:
+        - name: seasonId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Squad stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadStatRow"
+
+  /fixtures/bulk:
+    post:
+      operationId: bulkCreateFixtures
+      tags: [fixtures]
+      summary: Bulk create fixtures from a text list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkCreateFixturesBody"
+      responses:
+        "201":
+          description: Created fixtures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Fixture"
+
+  /fixtures/{id}/players:
+    get:
+      operationId: getFixturePlayers
+      tags: [fixtures]
+      summary: Get player presence list for a fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player presence list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FixturePlayerEntry"
+    put:
+      operationId: setFixturePlayers
+      tags: [fixtures]
+      summary: Set player presence for a fixture (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetFixturePlayersBody"
+      responses:
+        "200":
+          description: Updated presence list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FixturePlayerEntry"
+
+  /fixtures/{id}/vote-status:
+    get:
+      operationId: getVoteStatus
+      tags: [motm]
+      summary: Get MOTM voting status for a fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: deviceId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Voting status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteStatus"
+
+  /fixtures/{id}/vote:
+    post:
+      operationId: castVote
+      tags: [motm]
+      summary: Cast an MOTM vote for a fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CastVoteBody"
+      responses:
+        "201":
+          description: Vote recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteStatus"
+        "400":
+          description: Voting closed or already voted
+        "409":
+          description: Already voted from this device
+
   /admin/login:
     post:
       operationId: adminLogin
@@ -592,6 +737,10 @@ components:
           nullable: true
         seasonId:
           type: integer
+          nullable: true
+        votingClosesAt:
+          type: string
+          format: date-time
           nullable: true
       required:
         - id
@@ -801,3 +950,122 @@ components:
           nullable: true
       required:
         - success
+
+    SquadStatRow:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        playerName:
+          type: string
+        position:
+          type: string
+          nullable: true
+        apps:
+          type: integer
+        goals:
+          type: integer
+        assists:
+          type: integer
+        motmVotes:
+          type: integer
+        muppetAwards:
+          type: integer
+        marketValue:
+          type: integer
+      required:
+        - playerId
+        - playerName
+        - apps
+        - goals
+        - assists
+        - motmVotes
+        - muppetAwards
+        - marketValue
+
+    FixturePlayerEntry:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        playerName:
+          type: string
+        present:
+          type: boolean
+      required:
+        - playerId
+        - playerName
+        - present
+
+    SetFixturePlayersBody:
+      type: object
+      properties:
+        playerIds:
+          type: array
+          items:
+            type: integer
+          description: IDs of players who were present
+      required:
+        - playerIds
+
+    BulkCreateFixturesBody:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Newline-separated fixture text, e.g. "12/04 vs Real Sosobad"
+        seasonId:
+          type: integer
+          nullable: true
+        defaultYear:
+          type: integer
+          nullable: true
+      required:
+        - text
+
+    VoteStatus:
+      type: object
+      properties:
+        isOpen:
+          type: boolean
+        votingClosesAt:
+          type: string
+          format: date-time
+          nullable: true
+        hasVoted:
+          type: boolean
+        eligiblePlayers:
+          type: array
+          items:
+            $ref: "#/components/schemas/FixturePlayerEntry"
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              playerId:
+                type: integer
+              playerName:
+                type: string
+              votes:
+                type: integer
+            required:
+              - playerId
+              - playerName
+              - votes
+      required:
+        - isOpen
+        - hasVoted
+        - eligiblePlayers
+        - results
+
+    CastVoteBody:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        deviceId:
+          type: string
+      required:
+        - playerId
+        - deviceId

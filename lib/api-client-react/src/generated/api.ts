@@ -20,6 +20,8 @@ import type {
   AdminLoginBody,
   AdminLoginResult,
   Award,
+  BulkCreateFixturesBody,
+  CastVoteBody,
   CreateAwardBody,
   CreateFixtureBody,
   CreatePlayerBody,
@@ -27,14 +29,20 @@ import type {
   CreateStatBody,
   Dashboard,
   Fixture,
+  FixturePlayerEntry,
+  GetSquadStatsParams,
+  GetVoteStatusParams,
   HealthStatus,
   ListStatsParams,
   Player,
   PlayerProfile,
   PlayerStat,
   Season,
+  SetFixturePlayersBody,
+  SquadStatRow,
   StatEntry,
   UpdateFixtureBody,
+  VoteStatus,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -1866,6 +1874,559 @@ export function useGetDashboard<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get all players with aggregated stats and market value
+ */
+export const getGetSquadStatsUrl = (params?: GetSquadStatsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/squad-stats?${stringifiedParams}`
+    : `/api/squad-stats`;
+};
+
+export const getSquadStats = async (
+  params?: GetSquadStatsParams,
+  options?: RequestInit,
+): Promise<SquadStatRow[]> => {
+  return customFetch<SquadStatRow[]>(getGetSquadStatsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSquadStatsQueryKey = (params?: GetSquadStatsParams) => {
+  return [`/api/squad-stats`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetSquadStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSquadStats>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSquadStatsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSquadStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSquadStatsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSquadStats>>> = ({
+    signal,
+  }) => getSquadStats(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSquadStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSquadStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSquadStats>>
+>;
+export type GetSquadStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all players with aggregated stats and market value
+ */
+
+export function useGetSquadStats<
+  TData = Awaited<ReturnType<typeof getSquadStats>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSquadStatsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSquadStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSquadStatsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Bulk create fixtures from a text list
+ */
+export const getBulkCreateFixturesUrl = () => {
+  return `/api/fixtures/bulk`;
+};
+
+export const bulkCreateFixtures = async (
+  bulkCreateFixturesBody: BulkCreateFixturesBody,
+  options?: RequestInit,
+): Promise<Fixture[]> => {
+  return customFetch<Fixture[]>(getBulkCreateFixturesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(bulkCreateFixturesBody),
+  });
+};
+
+export const getBulkCreateFixturesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkCreateFixtures>>,
+    TError,
+    { data: BodyType<BulkCreateFixturesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof bulkCreateFixtures>>,
+  TError,
+  { data: BodyType<BulkCreateFixturesBody> },
+  TContext
+> => {
+  const mutationKey = ["bulkCreateFixtures"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof bulkCreateFixtures>>,
+    { data: BodyType<BulkCreateFixturesBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return bulkCreateFixtures(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BulkCreateFixturesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof bulkCreateFixtures>>
+>;
+export type BulkCreateFixturesMutationBody = BodyType<BulkCreateFixturesBody>;
+export type BulkCreateFixturesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Bulk create fixtures from a text list
+ */
+export const useBulkCreateFixtures = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof bulkCreateFixtures>>,
+    TError,
+    { data: BodyType<BulkCreateFixturesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof bulkCreateFixtures>>,
+  TError,
+  { data: BodyType<BulkCreateFixturesBody> },
+  TContext
+> => {
+  return useMutation(getBulkCreateFixturesMutationOptions(options));
+};
+
+/**
+ * @summary Get player presence list for a fixture
+ */
+export const getGetFixturePlayersUrl = (id: number) => {
+  return `/api/fixtures/${id}/players`;
+};
+
+export const getFixturePlayers = async (
+  id: number,
+  options?: RequestInit,
+): Promise<FixturePlayerEntry[]> => {
+  return customFetch<FixturePlayerEntry[]>(getGetFixturePlayersUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFixturePlayersQueryKey = (id: number) => {
+  return [`/api/fixtures/${id}/players`] as const;
+};
+
+export const getGetFixturePlayersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFixturePlayers>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFixturePlayers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetFixturePlayersQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getFixturePlayers>>
+  > = ({ signal }) => getFixturePlayers(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFixturePlayers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFixturePlayersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFixturePlayers>>
+>;
+export type GetFixturePlayersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get player presence list for a fixture
+ */
+
+export function useGetFixturePlayers<
+  TData = Awaited<ReturnType<typeof getFixturePlayers>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFixturePlayers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFixturePlayersQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Set player presence for a fixture (admin)
+ */
+export const getSetFixturePlayersUrl = (id: number) => {
+  return `/api/fixtures/${id}/players`;
+};
+
+export const setFixturePlayers = async (
+  id: number,
+  setFixturePlayersBody: SetFixturePlayersBody,
+  options?: RequestInit,
+): Promise<FixturePlayerEntry[]> => {
+  return customFetch<FixturePlayerEntry[]>(getSetFixturePlayersUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setFixturePlayersBody),
+  });
+};
+
+export const getSetFixturePlayersMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setFixturePlayers>>,
+    TError,
+    { id: number; data: BodyType<SetFixturePlayersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setFixturePlayers>>,
+  TError,
+  { id: number; data: BodyType<SetFixturePlayersBody> },
+  TContext
+> => {
+  const mutationKey = ["setFixturePlayers"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setFixturePlayers>>,
+    { id: number; data: BodyType<SetFixturePlayersBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return setFixturePlayers(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetFixturePlayersMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setFixturePlayers>>
+>;
+export type SetFixturePlayersMutationBody = BodyType<SetFixturePlayersBody>;
+export type SetFixturePlayersMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Set player presence for a fixture (admin)
+ */
+export const useSetFixturePlayers = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setFixturePlayers>>,
+    TError,
+    { id: number; data: BodyType<SetFixturePlayersBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setFixturePlayers>>,
+  TError,
+  { id: number; data: BodyType<SetFixturePlayersBody> },
+  TContext
+> => {
+  return useMutation(getSetFixturePlayersMutationOptions(options));
+};
+
+/**
+ * @summary Get MOTM voting status for a fixture
+ */
+export const getGetVoteStatusUrl = (
+  id: number,
+  params?: GetVoteStatusParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/fixtures/${id}/vote-status?${stringifiedParams}`
+    : `/api/fixtures/${id}/vote-status`;
+};
+
+export const getVoteStatus = async (
+  id: number,
+  params?: GetVoteStatusParams,
+  options?: RequestInit,
+): Promise<VoteStatus> => {
+  return customFetch<VoteStatus>(getGetVoteStatusUrl(id, params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetVoteStatusQueryKey = (
+  id: number,
+  params?: GetVoteStatusParams,
+) => {
+  return [
+    `/api/fixtures/${id}/vote-status`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetVoteStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getVoteStatus>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  params?: GetVoteStatusParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getVoteStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetVoteStatusQueryKey(id, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getVoteStatus>>> = ({
+    signal,
+  }) => getVoteStatus(id, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getVoteStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetVoteStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getVoteStatus>>
+>;
+export type GetVoteStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get MOTM voting status for a fixture
+ */
+
+export function useGetVoteStatus<
+  TData = Awaited<ReturnType<typeof getVoteStatus>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  params?: GetVoteStatusParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getVoteStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetVoteStatusQueryOptions(id, params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Cast an MOTM vote for a fixture
+ */
+export const getCastVoteUrl = (id: number) => {
+  return `/api/fixtures/${id}/vote`;
+};
+
+export const castVote = async (
+  id: number,
+  castVoteBody: CastVoteBody,
+  options?: RequestInit,
+): Promise<VoteStatus> => {
+  return customFetch<VoteStatus>(getCastVoteUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(castVoteBody),
+  });
+};
+
+export const getCastVoteMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof castVote>>,
+    TError,
+    { id: number; data: BodyType<CastVoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof castVote>>,
+  TError,
+  { id: number; data: BodyType<CastVoteBody> },
+  TContext
+> => {
+  const mutationKey = ["castVote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof castVote>>,
+    { id: number; data: BodyType<CastVoteBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return castVote(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CastVoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof castVote>>
+>;
+export type CastVoteMutationBody = BodyType<CastVoteBody>;
+export type CastVoteMutationError = ErrorType<void>;
+
+/**
+ * @summary Cast an MOTM vote for a fixture
+ */
+export const useCastVote = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof castVote>>,
+    TError,
+    { id: number; data: BodyType<CastVoteBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof castVote>>,
+  TError,
+  { id: number; data: BodyType<CastVoteBody> },
+  TContext
+> => {
+  return useMutation(getCastVoteMutationOptions(options));
+};
 
 /**
  * @summary Admin login with password

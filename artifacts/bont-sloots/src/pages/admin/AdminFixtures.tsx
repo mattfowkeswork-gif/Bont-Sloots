@@ -1,16 +1,112 @@
 import { useState } from "react";
-import { useListFixtures, useCreateFixture, useUpdateFixture, useDeleteFixture, getListFixturesQueryKey } from "@workspace/api-client-react";
+import {
+  useListFixtures, useCreateFixture, useUpdateFixture, useDeleteFixture,
+  getListFixturesQueryKey, useGetFixturePlayers, useSetFixturePlayers,
+  getGetFixturePlayersQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Calendar as CalendarIcon, MapPin, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users } from "lucide-react";
 import { format } from "date-fns";
+
+// Player presence dialog for a single fixture
+function PresenceDialog({ fixtureId, opponent }: { fixtureId: number; opponent: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: players, isLoading } = useGetFixturePlayers(fixtureId, {
+    query: { queryKey: getGetFixturePlayersQueryKey(fixtureId), enabled: open }
+  });
+  const setFixturePlayers = useSetFixturePlayers();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  const handleOpen = (o: boolean) => {
+    setOpen(o);
+    if (o && players) {
+      setSelected(new Set(players.filter(p => p.present).map(p => p.playerId)));
+    }
+  };
+
+  const handleSave = () => {
+    setFixturePlayers.mutate(
+      { id: fixtureId, data: { playerIds: Array.from(selected) } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetFixturePlayersQueryKey(fixtureId) });
+          toast({ title: "Presence saved" });
+          setOpen(false);
+        },
+        onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+      }
+    );
+  };
+
+  const togglePlayer = (id: number) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Sync selected with loaded players
+  const handleDialogOpen = (o: boolean) => {
+    if (o && players) {
+      setSelected(new Set(players.filter(p => p.present).map(p => p.playerId)));
+    }
+    handleOpen(o);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleDialogOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon" title="Set players present">
+          <Users className="w-4 h-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[340px]">
+        <DialogHeader>
+          <DialogTitle>Players Present – vs {opponent}</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="py-6 text-center text-muted-foreground text-sm">Loading...</div>
+        ) : (
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {players?.map(p => (
+                <label key={p.playerId} className="flex items-center gap-3 cursor-pointer rounded-lg px-3 py-2 hover:bg-secondary/50 transition-colors">
+                  <Checkbox
+                    checked={selected.has(p.playerId)}
+                    onCheckedChange={() => togglePlayer(p.playerId)}
+                    id={`player-${p.playerId}`}
+                  />
+                  <span className="text-sm text-white">{p.playerName}</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {selected.has(p.playerId) ? "Present" : ""}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground border-t border-border/30 pt-3">
+              {selected.size} player{selected.size !== 1 ? "s" : ""} marked present
+            </div>
+            <Button onClick={handleSave} className="w-full" disabled={setFixturePlayers.isPending}>
+              {setFixturePlayers.isPending ? "Saving..." : "Save Presence"}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function AdminFixtures() {
   const { data: fixtures, isLoading } = useListFixtures({
@@ -142,94 +238,105 @@ export function AdminFixtures() {
         ) : (
           fixtures?.map(fixture => (
             <Card key={fixture.id}>
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <div className="font-bold">vs {fixture.opponent}</div>
-                  <div className="text-sm text-muted-foreground flex gap-3 mt-1">
-                    <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {format(new Date(fixture.matchDate), "MMM d, yyyy")}</span>
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {fixture.kickoffTbc ? "TBC" : fixture.kickoffTime || "TBC"}</span>
-                  </div>
-                  {fixture.played && (
-                    <div className="text-sm font-bold mt-1 text-primary">
-                      Score: {fixture.homeScore} - {fixture.awayScore}
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold">vs {fixture.opponent}</div>
+                    <div className="text-sm text-muted-foreground flex gap-3 mt-1">
+                      <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" /> {format(new Date(fixture.matchDate), "MMM d, yyyy")}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {fixture.kickoffTbc ? "TBC" : fixture.kickoffTime || "TBC"}</span>
                     </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Dialog open={editingFixture?.id === fixture.id} onOpenChange={(open) => !open && setEditingFixture(null)}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="icon" onClick={() => setEditingFixture(fixture)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
-                      <DialogHeader>
-                        <DialogTitle>Edit Fixture</DialogTitle>
-                      </DialogHeader>
-                      {editingFixture && (
-                        <form onSubmit={handleUpdate} className="space-y-4 pt-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-opponent">Opponent</Label>
-                            <Input id="edit-opponent" name="opponent" defaultValue={editingFixture.opponent} required />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-matchDate">Date</Label>
-                            <Input id="edit-matchDate" name="matchDate" type="date" defaultValue={editingFixture.matchDate?.split('T')[0]} required />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
+                    {fixture.played && (
+                      <div className="text-sm font-bold mt-1 text-primary">
+                        Score: {fixture.homeScore} - {fixture.awayScore}
+                        {fixture.votingClosesAt && new Date(fixture.votingClosesAt) > new Date() && (
+                          <span className="ml-2 text-yellow-400 font-normal text-xs">Voting open</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {fixture.played && (
+                      <PresenceDialog fixtureId={fixture.id} opponent={fixture.opponent} />
+                    )}
+                    <Dialog open={editingFixture?.id === fixture.id} onOpenChange={(open) => !open && setEditingFixture(null)}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => setEditingFixture(fixture)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
+                        <DialogHeader>
+                          <DialogTitle>Edit Fixture</DialogTitle>
+                        </DialogHeader>
+                        {editingFixture && (
+                          <form onSubmit={handleUpdate} className="space-y-4 pt-4">
                             <div className="grid gap-2">
-                              <Label htmlFor="edit-kickoffTime">Time</Label>
-                              <Input id="edit-kickoffTime" name="kickoffTime" type="time" defaultValue={editingFixture.kickoffTime || ''} />
+                              <Label htmlFor="edit-opponent">Opponent</Label>
+                              <Input id="edit-opponent" name="opponent" defaultValue={editingFixture.opponent} required />
                             </div>
-                            <div className="flex items-center gap-2 mt-8">
-                              <Checkbox id="edit-kickoffTbc" name="kickoffTbc" defaultChecked={editingFixture.kickoffTbc} />
-                              <Label htmlFor="edit-kickoffTbc">Time TBC</Label>
-                            </div>
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-isHome">Home/Away</Label>
-                            <Select name="isHome" defaultValue={editingFixture.isHome ? "home" : "away"}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="home">Home</SelectItem>
-                                <SelectItem value="away">Away</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-venue">Venue</Label>
-                            <Input id="edit-venue" name="venue" defaultValue={editingFixture.venue || ''} />
-                          </div>
-                          
-                          <div className="border-t border-border pt-4 mt-4">
-                            <h3 className="font-bold mb-2 text-sm text-primary">Match Result</h3>
-                            <div className="flex items-center gap-2 mb-4">
-                              <Checkbox id="edit-played" name="played" defaultChecked={editingFixture.played} />
-                              <Label htmlFor="edit-played">Match Played</Label>
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-matchDate">Date</Label>
+                              <Input id="edit-matchDate" name="matchDate" type="date" defaultValue={editingFixture.matchDate?.split('T')[0]} required />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="grid gap-2">
-                                <Label htmlFor="edit-homeScore">Home Score</Label>
-                                <Input id="edit-homeScore" name="homeScore" type="number" defaultValue={editingFixture.homeScore ?? ''} />
+                                <Label htmlFor="edit-kickoffTime">Time</Label>
+                                <Input id="edit-kickoffTime" name="kickoffTime" type="time" defaultValue={editingFixture.kickoffTime || ''} />
                               </div>
-                              <div className="grid gap-2">
-                                <Label htmlFor="edit-awayScore">Away Score</Label>
-                                <Input id="edit-awayScore" name="awayScore" type="number" defaultValue={editingFixture.awayScore ?? ''} />
+                              <div className="flex items-center gap-2 mt-8">
+                                <Checkbox id="edit-kickoffTbc" name="kickoffTbc" defaultChecked={editingFixture.kickoffTbc} />
+                                <Label htmlFor="edit-kickoffTbc">Time TBC</Label>
                               </div>
                             </div>
-                          </div>
-                          
-                          <Button type="submit" className="w-full" disabled={updateFixture.isPending}>
-                            {updateFixture.isPending ? "Updating..." : "Update Fixture"}
-                          </Button>
-                        </form>
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                  
-                  <Button variant="destructive" size="icon" onClick={() => handleDelete(fixture.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-isHome">Home/Away</Label>
+                              <Select name="isHome" defaultValue={editingFixture.isHome ? "home" : "away"}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="home">Home</SelectItem>
+                                  <SelectItem value="away">Away</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="edit-venue">Venue</Label>
+                              <Input id="edit-venue" name="venue" defaultValue={editingFixture.venue || ''} />
+                            </div>
+
+                            <div className="border-t border-border pt-4 mt-4">
+                              <h3 className="font-bold mb-2 text-sm text-primary">Match Result</h3>
+                              <div className="flex items-center gap-2 mb-4">
+                                <Checkbox id="edit-played" name="played" defaultChecked={editingFixture.played} />
+                                <Label htmlFor="edit-played">Match Finished</Label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-homeScore">Home Score</Label>
+                                  <Input id="edit-homeScore" name="homeScore" type="number" defaultValue={editingFixture.homeScore ?? ''} />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-awayScore">Away Score</Label>
+                                  <Input id="edit-awayScore" name="awayScore" type="number" defaultValue={editingFixture.awayScore ?? ''} />
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Marking as Finished opens a 48-hour MOTM voting window.
+                              </p>
+                            </div>
+
+                            <Button type="submit" className="w-full" disabled={updateFixture.isPending}>
+                              {updateFixture.isPending ? "Updating..." : "Update Fixture"}
+                            </Button>
+                          </form>
+                        )}
+                      </DialogContent>
+                    </Dialog>
+
+                    <Button variant="destructive" size="icon" onClick={() => handleDelete(fixture.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

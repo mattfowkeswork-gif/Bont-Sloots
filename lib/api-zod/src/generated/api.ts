@@ -104,6 +104,7 @@ export const ListFixturesResponseItem = zod.object({
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
   seasonId: zod.number().nullish(),
+  votingClosesAt: zod.coerce.date().nullish(),
 });
 export const ListFixturesResponse = zod.array(ListFixturesResponseItem);
 
@@ -141,6 +142,7 @@ export const GetFixtureResponse = zod.object({
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
   seasonId: zod.number().nullish(),
+  votingClosesAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -177,6 +179,7 @@ export const UpdateFixtureResponse = zod.object({
   venue: zod.string().nullish(),
   notes: zod.string().nullish(),
   seasonId: zod.number().nullish(),
+  votingClosesAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -320,6 +323,7 @@ export const GetDashboardResponse = zod.object({
       venue: zod.string().nullish(),
       notes: zod.string().nullish(),
       seasonId: zod.number().nullish(),
+      votingClosesAt: zod.coerce.date().nullish(),
     })
     .nullish(),
   seasonRecord: zod.object({
@@ -354,8 +358,123 @@ export const GetDashboardResponse = zod.object({
       venue: zod.string().nullish(),
       notes: zod.string().nullish(),
       seasonId: zod.number().nullish(),
+      votingClosesAt: zod.coerce.date().nullish(),
     }),
   ),
+});
+
+/**
+ * @summary Get all players with aggregated stats and market value
+ */
+export const GetSquadStatsQueryParams = zod.object({
+  seasonId: zod.coerce.number().optional(),
+});
+
+export const GetSquadStatsResponseItem = zod.object({
+  playerId: zod.number(),
+  playerName: zod.string(),
+  position: zod.string().nullish(),
+  apps: zod.number(),
+  goals: zod.number(),
+  assists: zod.number(),
+  motmVotes: zod.number(),
+  muppetAwards: zod.number(),
+  marketValue: zod.number(),
+});
+export const GetSquadStatsResponse = zod.array(GetSquadStatsResponseItem);
+
+/**
+ * @summary Bulk create fixtures from a text list
+ */
+export const BulkCreateFixturesBody = zod.object({
+  text: zod
+    .string()
+    .describe(
+      'Newline-separated fixture text, e.g. \"12\/04 vs Real Sosobad\"',
+    ),
+  seasonId: zod.number().nullish(),
+  defaultYear: zod.number().nullish(),
+});
+
+/**
+ * @summary Get player presence list for a fixture
+ */
+export const GetFixturePlayersParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetFixturePlayersResponseItem = zod.object({
+  playerId: zod.number(),
+  playerName: zod.string(),
+  present: zod.boolean(),
+});
+export const GetFixturePlayersResponse = zod.array(
+  GetFixturePlayersResponseItem,
+);
+
+/**
+ * @summary Set player presence for a fixture (admin)
+ */
+export const SetFixturePlayersParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SetFixturePlayersBody = zod.object({
+  playerIds: zod
+    .array(zod.number())
+    .describe("IDs of players who were present"),
+});
+
+export const SetFixturePlayersResponseItem = zod.object({
+  playerId: zod.number(),
+  playerName: zod.string(),
+  present: zod.boolean(),
+});
+export const SetFixturePlayersResponse = zod.array(
+  SetFixturePlayersResponseItem,
+);
+
+/**
+ * @summary Get MOTM voting status for a fixture
+ */
+export const GetVoteStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetVoteStatusQueryParams = zod.object({
+  deviceId: zod.coerce.string().optional(),
+});
+
+export const GetVoteStatusResponse = zod.object({
+  isOpen: zod.boolean(),
+  votingClosesAt: zod.coerce.date().nullish(),
+  hasVoted: zod.boolean(),
+  eligiblePlayers: zod.array(
+    zod.object({
+      playerId: zod.number(),
+      playerName: zod.string(),
+      present: zod.boolean(),
+    }),
+  ),
+  results: zod.array(
+    zod.object({
+      playerId: zod.number(),
+      playerName: zod.string(),
+      votes: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Cast an MOTM vote for a fixture
+ */
+export const CastVoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CastVoteBody = zod.object({
+  playerId: zod.number(),
+  deviceId: zod.string(),
 });
 
 /**

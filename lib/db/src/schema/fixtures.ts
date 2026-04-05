@@ -16,6 +16,7 @@ export const fixturesTable = pgTable("fixtures", {
   venue: text("venue"),
   notes: text("notes"),
   seasonId: integer("season_id").references(() => seasonsTable.id, { onDelete: "set null" }),
+  votingClosesAt: timestamp("voting_closes_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

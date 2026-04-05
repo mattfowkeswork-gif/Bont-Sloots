@@ -19,4 +19,5 @@ export interface Fixture {
   venue?: string | null;
   notes?: string | null;
   seasonId?: number | null;
+  votingClosesAt?: Date | null;
 }

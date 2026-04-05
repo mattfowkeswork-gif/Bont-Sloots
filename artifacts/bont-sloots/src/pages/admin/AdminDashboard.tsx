@@ -8,6 +8,7 @@ import { AdminFixtures } from "./AdminFixtures";
 import { AdminPlayers } from "./AdminPlayers";
 import { AdminStats } from "./AdminStats";
 import { AdminAwards } from "./AdminAwards";
+import { AdminBulkFixtures } from "./AdminBulkFixtures";
 
 export function AdminDashboard() {
   const { isAuthenticated, logout } = useAuth();
@@ -39,14 +40,18 @@ export function AdminDashboard() {
       </div>
 
       <Tabs defaultValue="fixtures" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-card border border-border/50 h-auto p-1 mb-6">
+        <TabsList className="grid w-full grid-cols-5 bg-card border border-border/50 h-auto p-1 mb-6">
           <TabsTrigger value="fixtures" className="py-2 text-xs">Fixtures</TabsTrigger>
+          <TabsTrigger value="bulk" className="py-2 text-xs">Import</TabsTrigger>
           <TabsTrigger value="players" className="py-2 text-xs">Players</TabsTrigger>
           <TabsTrigger value="stats" className="py-2 text-xs">Stats</TabsTrigger>
           <TabsTrigger value="awards" className="py-2 text-xs">Awards</TabsTrigger>
         </TabsList>
         <TabsContent value="fixtures" className="mt-0">
           <AdminFixtures />
+        </TabsContent>
+        <TabsContent value="bulk" className="mt-0">
+          <AdminBulkFixtures />
         </TabsContent>
         <TabsContent value="players" className="mt-0">
           <AdminPlayers />
