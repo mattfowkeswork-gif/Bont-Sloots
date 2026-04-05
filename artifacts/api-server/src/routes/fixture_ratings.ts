@@ -103,11 +103,21 @@ router.put("/fixtures/:id/ratings", async (req, res): Promise<void> => {
     .from(playerRatingsTable)
     .where(eq(playerRatingsTable.fixtureId, fixtureId));
 
-  res.json(presenceRows.map(p => ({
-    playerId: p.playerId,
-    playerName: p.playerName,
-    rating: ratingRows.find(r => r.playerId === p.playerId)?.rating ?? null,
-  })));
+  // Find the MOM winner name for the response
+  const momAward = await db
+    .select({ playerId: awardsTable.playerId, playerName: playersTable.name })
+    .from(awardsTable)
+    .innerJoin(playersTable, eq(awardsTable.playerId, playersTable.id))
+    .where(and(eq(awardsTable.fixtureId, fixtureId), eq(awardsTable.type, "mom")));
+
+  res.json({
+    ratings: presenceRows.map(p => ({
+      playerId: p.playerId,
+      playerName: p.playerName,
+      rating: ratingRows.find(r => r.playerId === p.playerId)?.rating ?? null,
+    })),
+    momWinner: momAward[0]?.playerName ?? null,
+  });
 });
 
 export default router;

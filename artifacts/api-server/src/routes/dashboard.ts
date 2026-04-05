@@ -85,10 +85,14 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
   // Hall of Fame
   const mostMotmsPlayer = [...playerStats].sort((a, b) => b.fanMotm - a.fanMotm)[0] ?? null;
   const muppetKingPlayer = [...playerStats].sort((a, b) => b.motmCount - a.motmCount)[0] ?? null;
+  const topRatedPlayer = [...playerStats].sort((a, b) => b.momCount - a.momCount)[0] ?? null;
 
   const hallOfFame = {
     topScorer: topScorer && topScorer.totalGoals > 0
       ? { playerId: topScorer.playerId, playerName: topScorer.playerName, value: topScorer.totalGoals }
+      : null,
+    topRated: topRatedPlayer && topRatedPlayer.momCount > 0
+      ? { playerId: topRatedPlayer.playerId, playerName: topRatedPlayer.playerName, value: topRatedPlayer.momCount }
       : null,
     mostMotms: mostMotmsPlayer && mostMotmsPlayer.fanMotm > 0
       ? { playerId: mostMotmsPlayer.playerId, playerName: mostMotmsPlayer.playerName, value: mostMotmsPlayer.fanMotm }

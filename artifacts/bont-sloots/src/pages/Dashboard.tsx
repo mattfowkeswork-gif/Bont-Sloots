@@ -55,7 +55,7 @@ function Countdown({ targetDate }: { targetDate: string }) {
   );
 }
 
-function HallOfFame({ hof }: { hof: { topScorer: any; mostMotms: any; muppetKing: any } }) {
+function HallOfFame({ hof }: { hof: { topScorer: any; topRated?: any; mostMotms: any; muppetKing: any } }) {
   const entries = [
     {
       label: "Top Scorer",
@@ -67,9 +67,18 @@ function HallOfFame({ hof }: { hof: { topScorer: any; mostMotms: any; muppetKing
       bgClass: "from-yellow-500/5",
     },
     {
+      label: "Player of the Match",
+      player: hof.topRated ?? null,
+      suffix: (v: number) => `${v} MOM${v !== 1 ? "s" : ""}`,
+      Icon: Star,
+      iconClass: "text-yellow-400",
+      borderClass: "border-yellow-500/20",
+      bgClass: "from-yellow-500/5",
+    },
+    {
       label: "Fan Favourite",
       player: hof.mostMotms,
-      suffix: (v: number) => `${v} MOTM${v !== 1 ? "s" : ""}`,
+      suffix: (v: number) => `${v} fan vote${v !== 1 ? "s" : ""}`,
       Icon: Star,
       iconClass: "text-purple-400",
       borderClass: "border-purple-500/20",

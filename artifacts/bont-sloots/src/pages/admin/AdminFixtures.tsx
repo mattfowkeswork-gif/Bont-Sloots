@@ -4,6 +4,7 @@ import {
   getListFixturesQueryKey, useGetFixturePlayers, useSetFixturePlayers,
   getGetFixturePlayersQueryKey,
   useGetFixtureRatings, useSetFixtureRatings, getGetFixtureRatingsQueryKey,
+  getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -145,9 +146,14 @@ function RatingsDialog({ fixtureId, opponent }: { fixtureId: number; opponent: s
     }
 
     setRatings.mutate({ id: fixtureId, data: { ratings } }, {
-      onSuccess: () => {
+      onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: getGetFixtureRatingsQueryKey(fixtureId) });
-        toast({ title: "Ratings saved" });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListFixturesQueryKey() });
+        const momWinner = (data as any)?.momWinner;
+        toast({
+          title: momWinner ? `Ratings saved — MOM: ${momWinner}` : "Ratings saved",
+        });
         setOpen(false);
       },
       onError: () => toast({ title: "Failed to save ratings", variant: "destructive" }),
