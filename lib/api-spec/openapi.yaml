@@ -616,6 +616,52 @@ paths:
                 items:
                   $ref: "#/components/schemas/FixturePlayerEntry"
 
+  /fixtures/{id}/ratings:
+    get:
+      operationId: getFixtureRatings
+      tags: [fixtures]
+      summary: Get match ratings for all players in a fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Player ratings list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerRatingEntry"
+    put:
+      operationId: setFixtureRatings
+      tags: [fixtures]
+      summary: Upsert match ratings for players in a fixture (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetFixtureRatingsBody"
+      responses:
+        "200":
+          description: Saved ratings list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerRatingEntry"
+
   /fixtures/{id}/vote-status:
     get:
       operationId: getVoteStatus
@@ -1243,6 +1289,41 @@ components:
           description: IDs of players who were present
       required:
         - playerIds
+
+    PlayerRatingEntry:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        playerName:
+          type: string
+        rating:
+          type: number
+          nullable: true
+          description: Rating from 0.0 to 10.0 in 0.5 increments, or null if not yet rated
+      required:
+        - playerId
+        - playerName
+        - rating
+
+    SetFixtureRatingsBody:
+      type: object
+      properties:
+        ratings:
+          type: array
+          items:
+            type: object
+            properties:
+              playerId:
+                type: integer
+              rating:
+                type: number
+                description: 0.0 to 10.0 in 0.5 increments
+            required:
+              - playerId
+              - rating
+      required:
+        - ratings
 
     BulkCreateFixturesBody:
       type: object

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, desc } from "drizzle-orm";
-import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable } from "@workspace/db";
+import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable } from "@workspace/db";
 import {
   CreatePlayerBody,
   GetPlayerParams,
@@ -139,6 +139,13 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .where(eq(playerCommentsTable.playerId, player.id))
     .orderBy(playerCommentsTable.createdAt);
 
+  // Average match rating across all rated fixtures
+  const [avgRatingRow] = await db
+    .select({ avg: sql<string>`round(avg(rating)::numeric, 1)` })
+    .from(playerRatingsTable)
+    .where(eq(playerRatingsTable.playerId, player.id));
+  const avgRating = avgRatingRow?.avg ? parseFloat(avgRatingRow.avg) : null;
+
   res.json({
     id: player.id,
     name: player.name,
@@ -151,6 +158,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     motmCount,
     apps,
     marketValue,
+    avgRating,
     recentForm,
     comments,
     awardHistory: playerAwards.map(a => ({

@@ -542,6 +542,57 @@ export const SetFixturePlayersResponse = zod.array(
 );
 
 /**
+ * @summary Get match ratings for all players in a fixture
+ */
+export const GetFixtureRatingsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetFixtureRatingsResponseItem = zod.object({
+  playerId: zod.number(),
+  playerName: zod.string(),
+  rating: zod
+    .number()
+    .nullable()
+    .describe(
+      "Rating from 0.0 to 10.0 in 0.5 increments, or null if not yet rated",
+    ),
+});
+export const GetFixtureRatingsResponse = zod.array(
+  GetFixtureRatingsResponseItem,
+);
+
+/**
+ * @summary Upsert match ratings for players in a fixture (admin)
+ */
+export const SetFixtureRatingsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SetFixtureRatingsBody = zod.object({
+  ratings: zod.array(
+    zod.object({
+      playerId: zod.number(),
+      rating: zod.number().describe("0.0 to 10.0 in 0.5 increments"),
+    }),
+  ),
+});
+
+export const SetFixtureRatingsResponseItem = zod.object({
+  playerId: zod.number(),
+  playerName: zod.string(),
+  rating: zod
+    .number()
+    .nullable()
+    .describe(
+      "Rating from 0.0 to 10.0 in 0.5 increments, or null if not yet rated",
+    ),
+});
+export const SetFixtureRatingsResponse = zod.array(
+  SetFixtureRatingsResponseItem,
+);
+
+/**
  * @summary Get MOTM voting status for a fixture
  */
 export const GetVoteStatusParams = zod.object({

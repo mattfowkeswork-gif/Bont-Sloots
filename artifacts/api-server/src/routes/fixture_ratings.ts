@@ -1,0 +1,88 @@
+import { Router, type IRouter } from "express";
+import { eq, and } from "drizzle-orm";
+import { db, playerRatingsTable, playersTable, fixturePlayersTable } from "@workspace/db";
+import { z } from "zod";
+
+const router: IRouter = Router();
+
+const IdParam = z.object({ id: z.coerce.number().int().positive() });
+
+const SetRatingsBody = z.object({
+  ratings: z.array(z.object({
+    playerId: z.number().int().positive(),
+    rating: z.number().min(0).max(10),
+  }))
+});
+
+router.get("/fixtures/:id/ratings", async (req, res): Promise<void> => {
+  const params = IdParam.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: "Invalid fixture ID" }); return; }
+
+  const fixtureId = params.data.id;
+
+  // Get all present players for this fixture
+  const presenceRows = await db
+    .select({ playerId: fixturePlayersTable.playerId, playerName: playersTable.name })
+    .from(fixturePlayersTable)
+    .innerJoin(playersTable, eq(fixturePlayersTable.playerId, playersTable.id))
+    .where(and(eq(fixturePlayersTable.fixtureId, fixtureId), eq(fixturePlayersTable.present, true)));
+
+  // Get existing ratings
+  const ratingRows = await db
+    .select()
+    .from(playerRatingsTable)
+    .where(eq(playerRatingsTable.fixtureId, fixtureId));
+
+  const result = presenceRows.map(p => ({
+    playerId: p.playerId,
+    playerName: p.playerName,
+    rating: ratingRows.find(r => r.playerId === p.playerId)?.rating ?? null,
+  }));
+
+  res.json(result);
+});
+
+router.put("/fixtures/:id/ratings", async (req, res): Promise<void> => {
+  const params = IdParam.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: "Invalid fixture ID" }); return; }
+  const body = SetRatingsBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
+
+  const fixtureId = params.data.id;
+
+  for (const { playerId, rating } of body.data.ratings) {
+    const existing = await db
+      .select()
+      .from(playerRatingsTable)
+      .where(and(eq(playerRatingsTable.fixtureId, fixtureId), eq(playerRatingsTable.playerId, playerId)));
+
+    if (existing.length > 0) {
+      await db
+        .update(playerRatingsTable)
+        .set({ rating: String(rating) })
+        .where(and(eq(playerRatingsTable.fixtureId, fixtureId), eq(playerRatingsTable.playerId, playerId)));
+    } else {
+      await db.insert(playerRatingsTable).values({ fixtureId, playerId, rating: String(rating) });
+    }
+  }
+
+  // Return updated list
+  const presenceRows = await db
+    .select({ playerId: fixturePlayersTable.playerId, playerName: playersTable.name })
+    .from(fixturePlayersTable)
+    .innerJoin(playersTable, eq(fixturePlayersTable.playerId, playersTable.id))
+    .where(and(eq(fixturePlayersTable.fixtureId, fixtureId), eq(fixturePlayersTable.present, true)));
+
+  const ratingRows = await db
+    .select()
+    .from(playerRatingsTable)
+    .where(eq(playerRatingsTable.fixtureId, fixtureId));
+
+  res.json(presenceRows.map(p => ({
+    playerId: p.playerId,
+    playerName: p.playerName,
+    rating: ratingRows.find(r => r.playerId === p.playerId)?.rating ?? null,
+  })));
+});
+
+export default router;

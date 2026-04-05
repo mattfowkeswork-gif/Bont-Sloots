@@ -250,6 +250,23 @@ export interface SetFixturePlayersBody {
   playerIds: number[];
 }
 
+export interface PlayerRatingEntry {
+  playerId: number;
+  playerName: string;
+  /** Rating from 0.0 to 10.0 in 0.5 increments, or null if not yet rated */
+  rating: number | null;
+}
+
+export type SetFixtureRatingsBodyRatingsItem = {
+  playerId: number;
+  /** 0.0 to 10.0 in 0.5 increments */
+  rating: number;
+};
+
+export interface SetFixtureRatingsBody {
+  ratings: SetFixtureRatingsBodyRatingsItem[];
+}
+
 export interface BulkCreateFixturesBody {
   /** Newline-separated fixture text, e.g. "12/04 vs Real Sosobad" */
   text: string;

@@ -12,6 +12,7 @@ import fixturePlayersRouter from "./fixture_players";
 import motmVotesRouter from "./motm_votes";
 import playerCommentsRouter from "./player_comments";
 import settingsRouter from "./settings";
+import fixtureRatingsRouter from "./fixture_ratings";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(squadStatsRouter);
 router.use(fixturePlayersRouter);
 router.use(motmVotesRouter);
 router.use(settingsRouter);
+router.use(fixtureRatingsRouter);
 
 export default router;

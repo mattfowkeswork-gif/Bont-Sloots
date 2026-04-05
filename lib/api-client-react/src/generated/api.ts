@@ -39,9 +39,11 @@ import type {
   Player,
   PlayerComment,
   PlayerProfile,
+  PlayerRatingEntry,
   PlayerStat,
   Season,
   SetFixturePlayersBody,
+  SetFixtureRatingsBody,
   SetSetting200,
   SetSettingBody,
   SquadStatRow,
@@ -2664,6 +2666,180 @@ export const useSetFixturePlayers = <
   TContext
 > => {
   return useMutation(getSetFixturePlayersMutationOptions(options));
+};
+
+/**
+ * @summary Get match ratings for all players in a fixture
+ */
+export const getGetFixtureRatingsUrl = (id: number) => {
+  return `/api/fixtures/${id}/ratings`;
+};
+
+export const getFixtureRatings = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerRatingEntry[]> => {
+  return customFetch<PlayerRatingEntry[]>(getGetFixtureRatingsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFixtureRatingsQueryKey = (id: number) => {
+  return [`/api/fixtures/${id}/ratings`] as const;
+};
+
+export const getGetFixtureRatingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFixtureRatings>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFixtureRatings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetFixtureRatingsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getFixtureRatings>>
+  > = ({ signal }) => getFixtureRatings(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFixtureRatings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFixtureRatingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFixtureRatings>>
+>;
+export type GetFixtureRatingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get match ratings for all players in a fixture
+ */
+
+export function useGetFixtureRatings<
+  TData = Awaited<ReturnType<typeof getFixtureRatings>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFixtureRatings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFixtureRatingsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Upsert match ratings for players in a fixture (admin)
+ */
+export const getSetFixtureRatingsUrl = (id: number) => {
+  return `/api/fixtures/${id}/ratings`;
+};
+
+export const setFixtureRatings = async (
+  id: number,
+  setFixtureRatingsBody: SetFixtureRatingsBody,
+  options?: RequestInit,
+): Promise<PlayerRatingEntry[]> => {
+  return customFetch<PlayerRatingEntry[]>(getSetFixtureRatingsUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setFixtureRatingsBody),
+  });
+};
+
+export const getSetFixtureRatingsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setFixtureRatings>>,
+    TError,
+    { id: number; data: BodyType<SetFixtureRatingsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setFixtureRatings>>,
+  TError,
+  { id: number; data: BodyType<SetFixtureRatingsBody> },
+  TContext
+> => {
+  const mutationKey = ["setFixtureRatings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setFixtureRatings>>,
+    { id: number; data: BodyType<SetFixtureRatingsBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return setFixtureRatings(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetFixtureRatingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setFixtureRatings>>
+>;
+export type SetFixtureRatingsMutationBody = BodyType<SetFixtureRatingsBody>;
+export type SetFixtureRatingsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Upsert match ratings for players in a fixture (admin)
+ */
+export const useSetFixtureRatings = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setFixtureRatings>>,
+    TError,
+    { id: number; data: BodyType<SetFixtureRatingsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setFixtureRatings>>,
+  TError,
+  { id: number; data: BodyType<SetFixtureRatingsBody> },
+  TContext
+> => {
+  return useMutation(getSetFixtureRatingsMutationOptions(options));
 };
 
 /**

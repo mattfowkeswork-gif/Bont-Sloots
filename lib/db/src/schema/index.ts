@@ -7,3 +7,4 @@ export * from "./fixture_players";
 export * from "./motm_votes";
 export * from "./player_comments";
 export * from "./settings";
+export * from "./player_ratings";

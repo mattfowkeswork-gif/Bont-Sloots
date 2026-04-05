@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useListFixtures, useCreateFixture, useUpdateFixture, useDeleteFixture,
   getListFixturesQueryKey, useGetFixturePlayers, useSetFixturePlayers,
   getGetFixturePlayersQueryKey,
+  useGetFixtureRatings, useSetFixtureRatings, getGetFixtureRatingsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users, Star } from "lucide-react";
 import { format } from "date-fns";
+
+const RATING_OPTIONS = Array.from({ length: 21 }, (_, i) => (i * 0.5));
 
 // Player presence dialog for a single fixture
 function PresenceDialog({ fixtureId, opponent }: { fixtureId: number; opponent: string }) {
@@ -100,6 +103,103 @@ function PresenceDialog({ fixtureId, opponent }: { fixtureId: number; opponent: 
             </div>
             <Button onClick={handleSave} className="w-full" disabled={setFixturePlayers.isPending}>
               {setFixturePlayers.isPending ? "Saving..." : "Save Presence"}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RatingsDialog({ fixtureId, opponent }: { fixtureId: number; opponent: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: players, isLoading } = useGetFixtureRatings(fixtureId, {
+    query: { queryKey: getGetFixtureRatingsQueryKey(fixtureId), enabled: open }
+  });
+  const setRatings = useSetFixtureRatings();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [localRatings, setLocalRatings] = useState<Record<number, string>>({});
+
+  const handleOpen = (o: boolean) => {
+    setOpen(o);
+    if (!o) setLocalRatings({});
+  };
+
+  // Populate ratings from loaded data whenever it arrives
+  useEffect(() => {
+    if (players && open) {
+      const initial: Record<number, string> = {};
+      players.forEach(p => { if (p.rating !== null && p.rating !== undefined) initial[p.playerId] = String(p.rating); });
+      setLocalRatings(initial);
+    }
+  }, [players, open]);
+
+  const handleSave = () => {
+    const ratings = Object.entries(localRatings)
+      .filter(([, v]) => v !== "")
+      .map(([playerId, rating]) => ({ playerId: Number(playerId), rating: Number(rating) }));
+
+    if (ratings.length === 0) {
+      toast({ title: "No ratings to save", variant: "destructive" });
+      return;
+    }
+
+    setRatings.mutate({ id: fixtureId, data: { ratings } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetFixtureRatingsQueryKey(fixtureId) });
+        toast({ title: "Ratings saved" });
+        setOpen(false);
+      },
+      onError: () => toast({ title: "Failed to save ratings", variant: "destructive" }),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon" title="Rate players">
+          <Star className="w-4 h-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>Match Ratings – vs {opponent}</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="py-6 text-center text-muted-foreground text-sm">Loading players...</div>
+        ) : !players || players.length === 0 ? (
+          <div className="py-6 text-center text-muted-foreground text-sm">
+            No players marked present for this fixture.
+          </div>
+        ) : (
+          <div className="space-y-4 pt-2">
+            <p className="text-xs text-muted-foreground">Rate each player from 0.0 to 10.0.</p>
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {players.map(p => (
+                <div key={p.playerId} className="flex items-center gap-3 px-1 py-1">
+                  <span className="text-sm text-white flex-1 truncate">{p.playerName}</span>
+                  <Select
+                    value={localRatings[p.playerId] ?? ""}
+                    onValueChange={v => setLocalRatings(prev => ({ ...prev, [p.playerId]: v }))}
+                  >
+                    <SelectTrigger className="w-24 h-8 text-sm">
+                      <SelectValue placeholder="–" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RATING_OPTIONS.map(r => (
+                        <SelectItem key={r} value={String(r)}>
+                          {r.toFixed(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+            <Button onClick={handleSave} className="w-full" disabled={setRatings.isPending}>
+              {setRatings.isPending ? "Saving..." : "Save Ratings"}
             </Button>
           </div>
         )}
@@ -258,6 +358,9 @@ export function AdminFixtures() {
                   <div className="flex gap-2">
                     {fixture.played && (
                       <PresenceDialog fixtureId={fixture.id} opponent={fixture.opponent} />
+                    )}
+                    {fixture.played && (
+                      <RatingsDialog fixtureId={fixture.id} opponent={fixture.opponent} />
                     )}
                     <Dialog open={editingFixture?.id === fixture.id} onOpenChange={(open) => !open && setEditingFixture(null)}>
                       <DialogTrigger asChild>
