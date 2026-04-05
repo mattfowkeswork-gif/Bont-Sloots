@@ -715,6 +715,50 @@ paths:
         "409":
           description: Already voted from this device
 
+  /fixtures/{id}/value-changes:
+    get:
+      operationId: getFixtureValueChanges
+      tags: [fixtures]
+      summary: Get per-player value changes for a played fixture
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Value change entries per player
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerValueChangeEntry"
+        "404":
+          description: Fixture not found or not played
+
+  /admin/recalculate-values:
+    post:
+      operationId: recalculateValues
+      tags: [admin]
+      summary: Recalculate all player values from scratch
+      responses:
+        "200":
+          description: Recalculation triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                required:
+                  - success
+                  - message
+
   /admin/login:
     post:
       operationId: adminLogin
@@ -1200,10 +1244,13 @@ components:
         squadPhotoUrl:
           type: string
           nullable: true
+        totalSquadValue:
+          type: integer
       required:
         - seasonRecord
         - recentResults
         - hallOfFame
+        - totalSquadValue
 
     AdminLoginBody:
       type: object
@@ -1245,15 +1292,26 @@ components:
           type: integer
         motmVotes:
           type: integer
+        momAwards:
+          type: integer
         muppetAwards:
           type: integer
         marketValue:
           type: integer
+        avgRating:
+          type: number
+          nullable: true
         recentForm:
           type: array
           items:
             type: integer
           description: Market value delta for last 3 appearances (oldest to newest)
+        lastMatchChange:
+          type: integer
+          nullable: true
+          description: Total value change from the most recent appearance
+        isKing:
+          type: boolean
       required:
         - playerId
         - playerName
@@ -1261,9 +1319,11 @@ components:
         - goals
         - assists
         - motmVotes
+        - momAwards
         - muppetAwards
         - marketValue
         - recentForm
+        - isKing
 
     FixturePlayerEntry:
       type: object
@@ -1386,3 +1446,36 @@ components:
       required:
         - playerId
         - deviceId
+
+    ValueBreakdownItem:
+      type: object
+      properties:
+        label:
+          type: string
+        amount:
+          type: integer
+      required:
+        - label
+        - amount
+
+    PlayerValueChangeEntry:
+      type: object
+      properties:
+        playerId:
+          type: integer
+        playerName:
+          type: string
+        totalChange:
+          type: integer
+        breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValueBreakdownItem"
+        isKing:
+          type: boolean
+      required:
+        - playerId
+        - playerName
+        - totalChange
+        - breakdown
+        - isKing

@@ -17,4 +17,5 @@ export interface Dashboard {
   recentResults: Fixture[];
   hallOfFame: HallOfFame;
   squadPhotoUrl?: string | null;
+  totalSquadValue: number;
 }

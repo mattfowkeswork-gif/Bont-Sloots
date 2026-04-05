@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, awardsTable, playersTable, fixturesTable } from "@workspace/db";
+import { recalculateFixtureValues } from "./value_calculator";
 import {
   CreateAwardBody,
   DeleteAwardParams,
@@ -51,6 +52,9 @@ router.post("/awards", async (req, res): Promise<void> => {
     fixtureId: parsed.data.fixtureId,
     type: parsed.data.type,
   }).returning();
+
+  // Trigger value recalculation for this fixture
+  await recalculateFixtureValues(award.fixtureId);
 
   res.status(201).json({
     id: award.id,

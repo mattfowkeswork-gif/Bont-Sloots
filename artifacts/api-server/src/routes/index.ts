@@ -13,6 +13,8 @@ import motmVotesRouter from "./motm_votes";
 import playerCommentsRouter from "./player_comments";
 import settingsRouter from "./settings";
 import fixtureRatingsRouter from "./fixture_ratings";
+import fixtureValuesRouter from "./fixture_values";
+import adminRecalculateRouter from "./admin_recalculate";
 
 const router: IRouter = Router();
 
@@ -30,5 +32,7 @@ router.use(fixturePlayersRouter);
 router.use(motmVotesRouter);
 router.use(settingsRouter);
 router.use(fixtureRatingsRouter);
+router.use(fixtureValuesRouter);
+router.use(adminRecalculateRouter);
 
 export default router;

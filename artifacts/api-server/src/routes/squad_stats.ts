@@ -1,6 +1,9 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, and, inArray, desc } from "drizzle-orm";
-import { db, playersTable, statsTable, awardsTable, fixturePlayersTable, motmVotesTable, fixturesTable, playerRatingsTable } from "@workspace/db";
+import { eq, sql, and, inArray, desc, sum } from "drizzle-orm";
+import {
+  db, playersTable, statsTable, awardsTable, fixturePlayersTable,
+  motmVotesTable, fixturesTable, playerRatingsTable, playerValueChangesTable,
+} from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -24,20 +27,19 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     const result = players.map(p => ({
       playerId: p.id, playerName: p.name, position: p.position ?? null,
       scoutingProfile: p.scoutingProfile ?? null,
-      apps: 0, goals: 0, assists: 0, motmVotes: 0, momAwards: 0, muppetAwards: 0, marketValue: 5000000,
-      avgRating: null, recentForm: [],
+      apps: 0, goals: 0, assists: 0, motmVotes: 0, momAwards: 0, muppetAwards: 0,
+      marketValue: 5_000_000, avgRating: null, recentForm: [], lastMatchChange: null, isKing: false,
     }));
     res.json(result);
     return;
   }
 
-  // Apps (appearances) from fixture_players
+  // Apps
   let appsQuery = db
     .select({ playerId: fixturePlayersTable.playerId, count: sql<number>`count(*)::int` })
     .from(fixturePlayersTable)
     .where(eq(fixturePlayersTable.present, true))
     .$dynamic();
-
   if (seasonFixtureIds !== null) {
     appsQuery = appsQuery.where(and(
       eq(fixturePlayersTable.present, true),
@@ -68,7 +70,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   }
   const assistCounts = await assistsQuery.groupBy(statsTable.playerId);
 
-  // MOTM votes (fan votes)
+  // MOTM fan votes
   let motmQuery = db
     .select({ playerId: motmVotesTable.playerId, count: sql<number>`count(*)::int` })
     .from(motmVotesTable)
@@ -89,7 +91,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   }
   const muppetCounts = await muppetQuery.groupBy(awardsTable.playerId);
 
-  // Man of the Match awards
+  // MOM awards
   let momQuery = db
     .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
     .from(awardsTable)
@@ -100,7 +102,18 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   }
   const momCounts = await momQuery.groupBy(awardsTable.playerId);
 
-  // Average match rating per player
+  // King of the Match award count
+  let kingQuery = db
+    .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
+    .from(awardsTable)
+    .where(eq(awardsTable.type, "king"))
+    .$dynamic();
+  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
+    kingQuery = kingQuery.where(and(eq(awardsTable.type, "king"), inArray(awardsTable.fixtureId, seasonFixtureIds)) as any);
+  }
+  const kingCounts = await kingQuery.groupBy(awardsTable.playerId);
+
+  // Average match rating
   let avgRatingQuery = db
     .select({
       playerId: playerRatingsTable.playerId,
@@ -113,40 +126,30 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   }
   const avgRatings = await avgRatingQuery.groupBy(playerRatingsTable.playerId);
 
-  // Recent form: per-player last 3 appearances with stat deltas
-  const allAppearances = await db
+  // Market value from player_value_changes: sum totalChange per player
+  let valueQuery = db
     .select({
-      playerId: fixturePlayersTable.playerId,
-      fixtureId: fixturePlayersTable.fixtureId,
+      playerId: playerValueChangesTable.playerId,
+      totalValue: sql<number>`coalesce(sum(${playerValueChangesTable.totalChange}), 0)::int`,
+    })
+    .from(playerValueChangesTable)
+    .$dynamic();
+  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
+    valueQuery = valueQuery.where(inArray(playerValueChangesTable.fixtureId, seasonFixtureIds) as any);
+  }
+  const valueTotals = await valueQuery.groupBy(playerValueChangesTable.playerId);
+
+  // Recent form: last 3 match value changes per player (from player_value_changes, joined with fixtures for date)
+  const allValueChanges = await db
+    .select({
+      playerId: playerValueChangesTable.playerId,
+      fixtureId: playerValueChangesTable.fixtureId,
+      totalChange: playerValueChangesTable.totalChange,
       matchDate: fixturesTable.matchDate,
     })
-    .from(fixturePlayersTable)
-    .innerJoin(fixturesTable, eq(fixturePlayersTable.fixtureId, fixturesTable.id))
-    .where(eq(fixturePlayersTable.present, true))
+    .from(playerValueChangesTable)
+    .innerJoin(fixturesTable, eq(playerValueChangesTable.fixtureId, fixturesTable.id))
     .orderBy(desc(fixturesTable.matchDate));
-
-  const goalsPerFixture = await db
-    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
-    .from(statsTable)
-    .where(eq(statsTable.type, "goal"))
-    .groupBy(statsTable.playerId, statsTable.fixtureId);
-
-  const assistsPerFixture = await db
-    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
-    .from(statsTable)
-    .where(eq(statsTable.type, "assist"))
-    .groupBy(statsTable.playerId, statsTable.fixtureId);
-
-  const motmPerFixture = await db
-    .select({ playerId: motmVotesTable.playerId, fixtureId: motmVotesTable.fixtureId, count: sql<number>`count(*)::int` })
-    .from(motmVotesTable)
-    .groupBy(motmVotesTable.playerId, motmVotesTable.fixtureId);
-
-  const muppetPerFixture = await db
-    .select({ playerId: awardsTable.playerId, fixtureId: awardsTable.fixtureId, count: sql<number>`count(*)::int` })
-    .from(awardsTable)
-    .where(eq(awardsTable.type, "motm"))
-    .groupBy(awardsTable.playerId, awardsTable.fixtureId);
 
   const result = players.map(p => {
     const apps = appsCounts.find(a => a.playerId === p.id)?.count ?? 0;
@@ -155,26 +158,21 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     const motmVotes = motmCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const momAwards = momCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const muppetAwards = muppetCounts.find(m => m.playerId === p.id)?.count ?? 0;
+    const isKing = (kingCounts.find(k => k.playerId === p.id)?.count ?? 0) > 0;
     const avgRatingRaw = avgRatings.find(r => r.playerId === p.id)?.avg;
     const avgRating = avgRatingRaw ? parseFloat(avgRatingRaw) : null;
 
-    const marketValue = 5_000_000
-      + apps * 100_000
-      + (goals + assists + motmVotes) * 500_000
-      - muppetAwards * 1_000_000;
+    const earnedValue = valueTotals.find(v => v.playerId === p.id)?.totalValue ?? 0;
+    const marketValue = 5_000_000 + earnedValue;
 
-    const playerApps = allAppearances
-      .filter(a => a.playerId === p.id)
+    // Recent form: last 3 changes ordered newest-first, then reverse for sparkline (oldest→newest)
+    const playerChanges = allValueChanges
+      .filter(vc => vc.playerId === p.id)
       .slice(0, 3)
       .reverse();
+    const recentForm = playerChanges.map(vc => vc.totalChange);
 
-    const recentForm = playerApps.map(app => {
-      const g = goalsPerFixture.find(x => x.playerId === p.id && x.fixtureId === app.fixtureId)?.count ?? 0;
-      const a = assistsPerFixture.find(x => x.playerId === p.id && x.fixtureId === app.fixtureId)?.count ?? 0;
-      const m = motmPerFixture.find(x => x.playerId === p.id && x.fixtureId === app.fixtureId)?.count ?? 0;
-      const mup = muppetPerFixture.find(x => x.playerId === p.id && x.fixtureId === app.fixtureId)?.count ?? 0;
-      return 100_000 + g * 500_000 + a * 500_000 + m * 500_000 - mup * 1_000_000;
-    });
+    const lastMatchChange = allValueChanges.find(vc => vc.playerId === p.id)?.totalChange ?? null;
 
     return {
       playerId: p.id,
@@ -190,6 +188,8 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       marketValue,
       avgRating,
       recentForm,
+      lastMatchChange,
+      isKing,
     };
   });
 

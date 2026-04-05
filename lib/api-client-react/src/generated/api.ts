@@ -41,6 +41,8 @@ import type {
   PlayerProfile,
   PlayerRatingEntry,
   PlayerStat,
+  PlayerValueChangeEntry,
+  RecalculateValues200,
   Season,
   SetFixturePlayersBody,
   SetFixtureRatingsBody,
@@ -3039,6 +3041,178 @@ export const useCastVote = <
   TContext
 > => {
   return useMutation(getCastVoteMutationOptions(options));
+};
+
+/**
+ * @summary Get per-player value changes for a played fixture
+ */
+export const getGetFixtureValueChangesUrl = (id: number) => {
+  return `/api/fixtures/${id}/value-changes`;
+};
+
+export const getFixtureValueChanges = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlayerValueChangeEntry[]> => {
+  return customFetch<PlayerValueChangeEntry[]>(
+    getGetFixtureValueChangesUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetFixtureValueChangesQueryKey = (id: number) => {
+  return [`/api/fixtures/${id}/value-changes`] as const;
+};
+
+export const getGetFixtureValueChangesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFixtureValueChanges>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFixtureValueChanges>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetFixtureValueChangesQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getFixtureValueChanges>>
+  > = ({ signal }) => getFixtureValueChanges(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFixtureValueChanges>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFixtureValueChangesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFixtureValueChanges>>
+>;
+export type GetFixtureValueChangesQueryError = ErrorType<void>;
+
+/**
+ * @summary Get per-player value changes for a played fixture
+ */
+
+export function useGetFixtureValueChanges<
+  TData = Awaited<ReturnType<typeof getFixtureValueChanges>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getFixtureValueChanges>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFixtureValueChangesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Recalculate all player values from scratch
+ */
+export const getRecalculateValuesUrl = () => {
+  return `/api/admin/recalculate-values`;
+};
+
+export const recalculateValues = async (
+  options?: RequestInit,
+): Promise<RecalculateValues200> => {
+  return customFetch<RecalculateValues200>(getRecalculateValuesUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRecalculateValuesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recalculateValues>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof recalculateValues>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["recalculateValues"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof recalculateValues>>,
+    void
+  > = () => {
+    return recalculateValues(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RecalculateValuesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof recalculateValues>>
+>;
+
+export type RecalculateValuesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Recalculate all player values from scratch
+ */
+export const useRecalculateValues = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof recalculateValues>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof recalculateValues>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getRecalculateValuesMutationOptions(options));
 };
 
 /**

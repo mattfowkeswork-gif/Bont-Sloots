@@ -1,7 +1,7 @@
 import { useGetSquadStats, getGetSquadStatsQueryKey } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, TrendingUp, TrendingDown, Minus, Target, Shield, Star } from "lucide-react";
+import { Users, TrendingUp, TrendingDown, Minus, Target, Shield, Star, Crown } from "lucide-react";
 
 const POSITION_COLORS: Record<string, string> = {
   GK: "bg-emerald-700 text-emerald-100",
@@ -108,7 +108,7 @@ export function Squad() {
     );
   }
 
-  const sorted = [...players].sort((a, b) => a.playerName.localeCompare(b.playerName));
+  const sorted = [...players].sort((a, b) => b.marketValue - a.marketValue);
 
   return (
     <div className="pb-4">
@@ -131,10 +131,18 @@ export function Squad() {
                   {posLabel}
                 </div>
 
-                {/* Market value trend (top right) */}
-                <div className="absolute top-2 right-2 opacity-70">
-                  <SparkLine data={player.recentForm} />
-                </div>
+                {/* King of the Match crown (top right) */}
+                {player.isKing && (
+                  <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded-full px-1.5 py-0.5">
+                    <Crown className="w-3 h-3 text-yellow-400" />
+                    <span className="text-[8px] font-black text-yellow-400 leading-none">KING</span>
+                  </div>
+                )}
+                {!player.isKing && (
+                  <div className="absolute top-2 right-2 opacity-70">
+                    <SparkLine data={player.recentForm} />
+                  </div>
+                )}
 
                 {/* Avatar */}
                 <div

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
-import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable } from "@workspace/db";
+import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable, playerValueChangesTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -127,9 +127,16 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     .reverse()
     .find(f => f.votingClosesAt && new Date(f.votingClosesAt) > now) ?? null;
 
+  // Total squad market value = 5M per player + sum of all value changes
+  const [valueSum] = await db
+    .select({ total: sql<number>`coalesce(sum(${playerValueChangesTable.totalChange}), 0)::int` })
+    .from(playerValueChangesTable);
+  const totalSquadValue = players.length * 5_000_000 + (valueSum?.total ?? 0);
+
   res.json({
     nextFixture: nextFixture ? serializeFixture(nextFixture) : null,
     votingOpenFixture: votingOpenFixture ? serializeFixture(votingOpenFixture) : null,
+    totalSquadValue,
     seasonRecord: { played: playedFixtures.length, wins, draws, losses, goalsFor, goalsAgainst },
     topScorer: topScorer && topScorer.totalGoals > 0 ? topScorer : null,
     recentResults: recentResults.map(serializeFixture),

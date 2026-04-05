@@ -15,8 +15,13 @@ export interface SquadStatRow {
   goals: number;
   assists: number;
   motmVotes: number;
+  momAwards: number;
   muppetAwards: number;
   marketValue: number;
+  avgRating?: number | null;
   /** Market value delta for last 3 appearances (oldest to newest) */
   recentForm: number[];
+  /** Total value change from the most recent appearance */
+  lastMatchChange?: number | null;
+  isKing: boolean;
 }

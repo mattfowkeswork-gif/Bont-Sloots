@@ -213,6 +213,7 @@ export interface Dashboard {
   recentResults: Fixture[];
   hallOfFame: HallOfFame;
   squadPhotoUrl?: string | null;
+  totalSquadValue: number;
 }
 
 export interface AdminLoginBody {
@@ -233,10 +234,15 @@ export interface SquadStatRow {
   goals: number;
   assists: number;
   motmVotes: number;
+  momAwards: number;
   muppetAwards: number;
   marketValue: number;
+  avgRating?: number | null;
   /** Market value delta for last 3 appearances (oldest to newest) */
   recentForm: number[];
+  /** Total value change from the most recent appearance */
+  lastMatchChange?: number | null;
+  isKing: boolean;
 }
 
 export interface FixturePlayerEntry {
@@ -293,6 +299,19 @@ export interface CastVoteBody {
   deviceId: string;
 }
 
+export interface ValueBreakdownItem {
+  label: string;
+  amount: number;
+}
+
+export interface PlayerValueChangeEntry {
+  playerId: number;
+  playerName: string;
+  totalChange: number;
+  breakdown: ValueBreakdownItem[];
+  isKing: boolean;
+}
+
 export type AddPlayerCommentBody = {
   comment: string;
 };
@@ -321,4 +340,9 @@ export type GetSquadStatsParams = {
 
 export type GetVoteStatusParams = {
   deviceId?: string;
+};
+
+export type RecalculateValues200 = {
+  success: boolean;
+  message: string;
 };

@@ -464,6 +464,7 @@ export const GetDashboardResponse = zod.object({
       .nullable(),
   }),
   squadPhotoUrl: zod.string().nullish(),
+  totalSquadValue: zod.number(),
 });
 
 /**
@@ -482,11 +483,18 @@ export const GetSquadStatsResponseItem = zod.object({
   goals: zod.number(),
   assists: zod.number(),
   motmVotes: zod.number(),
+  momAwards: zod.number(),
   muppetAwards: zod.number(),
   marketValue: zod.number(),
+  avgRating: zod.number().nullish(),
   recentForm: zod
     .array(zod.number())
     .describe("Market value delta for last 3 appearances (oldest to newest)"),
+  lastMatchChange: zod
+    .number()
+    .nullish()
+    .describe("Total value change from the most recent appearance"),
+  isKing: zod.boolean(),
 });
 export const GetSquadStatsResponse = zod.array(GetSquadStatsResponseItem);
 
@@ -633,6 +641,37 @@ export const CastVoteParams = zod.object({
 export const CastVoteBody = zod.object({
   playerId: zod.number(),
   deviceId: zod.string(),
+});
+
+/**
+ * @summary Get per-player value changes for a played fixture
+ */
+export const GetFixtureValueChangesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetFixtureValueChangesResponseItem = zod.object({
+  playerId: zod.number(),
+  playerName: zod.string(),
+  totalChange: zod.number(),
+  breakdown: zod.array(
+    zod.object({
+      label: zod.string(),
+      amount: zod.number(),
+    }),
+  ),
+  isKing: zod.boolean(),
+});
+export const GetFixtureValueChangesResponse = zod.array(
+  GetFixtureValueChangesResponseItem,
+);
+
+/**
+ * @summary Recalculate all player values from scratch
+ */
+export const RecalculateValuesResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
 });
 
 /**

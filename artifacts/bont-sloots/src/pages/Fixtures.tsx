@@ -4,8 +4,9 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, CalendarDays, Trophy } from "lucide-react";
+import { MapPin, Clock, CalendarDays, Trophy, TrendingUp } from "lucide-react";
 import { MotmVotingDialog } from "@/components/MotmVotingDialog";
+import { FixtureValueModal } from "@/components/FixtureValueModal";
 
 export function Fixtures() {
   const { data: fixtures, isLoading } = useListFixtures({
@@ -13,6 +14,7 @@ export function Fixtures() {
   });
 
   const [votingFixture, setVotingFixture] = useState<{ id: number; opponent: string } | null>(null);
+  const [valueFixture, setValueFixture] = useState<{ id: number; opponent: string } | null>(null);
 
   if (isLoading) {
     return (
@@ -96,17 +98,30 @@ export function Fixtures() {
           )}
         </div>
 
-        {votingOpen && (
-          <div className="mt-3 pt-3 border-t border-border/30">
-            <Button
-              size="sm"
-              className="w-full gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 hover:text-yellow-300"
-              variant="outline"
-              onClick={() => setVotingFixture({ id: fixture.id, opponent: fixture.opponent })}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              Vote for Man of the Match
-            </Button>
+        {(votingOpen || fixture.played) && (
+          <div className="mt-3 pt-3 border-t border-border/30 flex flex-col gap-2">
+            {votingOpen && (
+              <Button
+                size="sm"
+                className="w-full gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 hover:text-yellow-300"
+                variant="outline"
+                onClick={() => setVotingFixture({ id: fixture.id, opponent: fixture.opponent })}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                Vote for Man of the Match
+              </Button>
+            )}
+            {fixture.played && (
+              <Button
+                size="sm"
+                className="w-full gap-2 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
+                variant="outline"
+                onClick={() => setValueFixture({ id: fixture.id, opponent: fixture.opponent })}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                Value Report
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -141,6 +156,15 @@ export function Fixtures() {
           opponent={votingFixture.opponent}
           open={true}
           onOpenChange={(open) => !open && setVotingFixture(null)}
+        />
+      )}
+
+      {valueFixture && (
+        <FixtureValueModal
+          fixtureId={valueFixture.id}
+          opponent={valueFixture.opponent}
+          open={true}
+          onOpenChange={(open) => !open && setValueFixture(null)}
         />
       )}
     </>

@@ -36,6 +36,25 @@ Mobile-optimized Progressive Web App (PWA) for Bont Sloots FC (Real Sosobad), a 
 9. **Multi-Season Support** — Seasons table with current season flag; fixtures linked to seasons; stats filter by season
 10. **Footer** — "Real Sosobad (Official)" link to Staveley 6-a-side league site
 
+## Player Value Economy
+
+Full market value system with formula-based calculations:
+- **Base value**: £5M per player
+- **Appearance fee**: +£100k per app
+- **Goals**: MID/FWD +£500k, DEF +£300k
+- **Assists**: MID/FWD +£300k, DEF +£200k
+- **Defensive rating tiers**: Clean sheet +£1.5M, 1-2 conceded +£750k, 3-5 conceded +£100k, 6-9 -£500k, 10+ -£1.5M
+- **Team disaster bonus**: All players -£500k when 6+ goals conceded
+- **Passenger tax**: MID/FWD 0G 0A = -£300k (waived if rating ≥7.5)
+- **Rating bonuses**: 9.0+ +£750k / 7.5-8.5 +£250k / 5.5-6.5 -£250k / <5.0 -£750k
+- **MOM award**: +£1M; **Fan MOTM**: +£500k; **King of the Match** (both): +£2M total
+- **Muppet award**: -£1M
+- Squad sorted by market value desc on Squad page
+- King of the Match crown badge shown on player cards
+- **Value Report** per fixture (breakdown modal accessible from Fixtures page)
+- **Total Squad Value** shown on Dashboard
+- `player_value_changes` table stores per-player per-fixture breakdown
+
 ## DB Schema
 
 Tables:
@@ -43,9 +62,10 @@ Tables:
 - `fixtures` — match calendar with scores, voting window, season FK
 - `seasons` — season management with is_current flag
 - `stats` — goals/assists per fixture per player
-- `awards` — mom/motm (admin-assigned)
+- `awards` — mom/motm/king/muppet (admin-assigned)
 - `fixture_players` — player presence/apps tracking
 - `motm_votes` — fan MOTM votes (device-fingerprinted)
+- `player_value_changes` — per-player per-fixture value change + breakdown JSONB
 
 ## Admin Access
 
@@ -57,6 +77,8 @@ Triple-tap the team badge in the header → password: `bont2025`
 - `PUT /api/fixtures/:id/players` — set player presence for a fixture
 - `GET/POST /api/fixtures/:id/vote` — MOTM voting
 - `POST /api/fixtures/bulk` — bulk import fixtures from text
+- `GET /api/fixtures/:id/value-changes` — per-player value breakdown for a fixture
+- `POST /api/admin/recalculate-values` — full recalculate all player values from scratch
 
 ## Deployment Notes
 

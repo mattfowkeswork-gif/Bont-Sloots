@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, playerRatingsTable, playersTable, fixturePlayersTable, awardsTable, fixturesTable } from "@workspace/db";
+import { recalculateFixtureValues } from "./value_calculator";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -90,6 +91,9 @@ router.put("/fixtures/:id/ratings", async (req, res): Promise<void> => {
       });
     }
   }
+
+  // Recalculate player values for this fixture
+  await recalculateFixtureValues(fixtureId);
 
   // Return updated list
   const presenceRows = await db

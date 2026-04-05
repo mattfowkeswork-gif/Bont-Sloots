@@ -2,7 +2,7 @@ import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle, ThumbsUp } from "lucide-react";
+import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle, ThumbsUp, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { format, differenceInSeconds } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -295,6 +295,24 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Total Squad Value */}
+      {dashboard.totalSquadValue > 0 && (
+        <Card className="bg-card border-border/50 relative overflow-hidden">
+          <div className="absolute -right-4 -bottom-4 opacity-5">
+            <TrendingUp className="w-24 h-24" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground font-normal">Total Squad Value</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-yellow-400">
+              £{(dashboard.totalSquadValue / 1_000_000).toFixed(1)}M
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">Combined market value</div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Hall of Fame */}
       {dashboard.hallOfFame && <HallOfFame hof={dashboard.hallOfFame} />}
