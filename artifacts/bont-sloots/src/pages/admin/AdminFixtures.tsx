@@ -14,10 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users, Star, Minus as MinusIcon } from "lucide-react";
 import { format } from "date-fns";
-
-const RATING_OPTIONS = Array.from({ length: 21 }, (_, i) => (i * 0.5));
 
 // Player presence dialog for a single fixture
 function PresenceDialog({ fixtureId, opponent }: { fixtureId: number; opponent: string }) {
@@ -175,28 +173,49 @@ function RatingsDialog({ fixtureId, opponent }: { fixtureId: number; opponent: s
           </div>
         ) : (
           <div className="space-y-4 pt-2">
-            <p className="text-xs text-muted-foreground">Rate each player from 0.0 to 10.0.</p>
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-              {players.map(p => (
-                <div key={p.playerId} className="flex items-center gap-3 px-1 py-1">
-                  <span className="text-sm text-white flex-1 truncate">{p.playerName}</span>
-                  <Select
-                    value={localRatings[p.playerId] ?? ""}
-                    onValueChange={v => setLocalRatings(prev => ({ ...prev, [p.playerId]: v }))}
-                  >
-                    <SelectTrigger className="w-24 h-8 text-sm">
-                      <SelectValue placeholder="–" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RATING_OPTIONS.map(r => (
-                        <SelectItem key={r} value={String(r)}>
-                          {r.toFixed(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
+            <p className="text-xs text-muted-foreground">Tap – / + to set each player's rating.</p>
+            <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
+              {players.map(p => {
+                const current = localRatings[p.playerId] !== undefined ? Number(localRatings[p.playerId]) : null;
+                const ratingColor = current == null ? "text-muted-foreground"
+                  : current >= 8 ? "text-emerald-400"
+                  : current >= 6 ? "text-yellow-400"
+                  : current >= 4 ? "text-orange-400"
+                  : "text-red-400";
+
+                const step = (dir: 1 | -1) => {
+                  const next = Math.round(((current ?? 5) + dir * 0.5) * 10) / 10;
+                  if (next < 0 || next > 10) return;
+                  setLocalRatings(prev => ({ ...prev, [p.playerId]: String(next) }));
+                };
+
+                return (
+                  <div key={p.playerId} className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-secondary/30">
+                    <span className="text-sm text-white flex-1 truncate">{p.playerName}</span>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => step(-1)}
+                        disabled={current === 0}
+                        className="w-9 h-9 rounded-lg border border-border bg-secondary flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30"
+                      >
+                        <MinusIcon className="w-4 h-4" />
+                      </button>
+                      <span className={`w-12 text-center font-bold font-mono text-base ${ratingColor}`}>
+                        {current != null ? current.toFixed(1) : "–"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => step(1)}
+                        disabled={current === 10}
+                        className="w-9 h-9 rounded-lg border border-border bg-secondary flex items-center justify-center active:scale-95 transition-transform disabled:opacity-30"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <Button onClick={handleSave} className="w-full" disabled={setRatings.isPending}>
               {setRatings.isPending ? "Saving..." : "Save Ratings"}
