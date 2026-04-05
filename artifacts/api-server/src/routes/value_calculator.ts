@@ -113,6 +113,20 @@ export async function recalculateFixtureValues(fixtureId?: number): Promise<void
       breakdown.push({ label: "Appearance Fee", amount: 100_000 });
       total += 100_000;
 
+      // 1b. Result bonus (all players)
+      const bsScore = fixture.isHome ? (fixture.homeScore ?? 0) : (fixture.awayScore ?? 0);
+      const oppScore = fixture.isHome ? (fixture.awayScore ?? 0) : (fixture.homeScore ?? 0);
+      if (bsScore > oppScore) {
+        breakdown.push({ label: "Win Bonus", amount: 300_000 });
+        total += 300_000;
+      } else if (bsScore === oppScore) {
+        breakdown.push({ label: "Draw Bonus", amount: 100_000 });
+        total += 100_000;
+      } else {
+        breakdown.push({ label: "Loss Penalty", amount: -200_000 });
+        total -= 200_000;
+      }
+
       // 2. Goals
       if (goals > 0) {
         const bonus = def ? 300_000 * goals : 500_000 * goals;

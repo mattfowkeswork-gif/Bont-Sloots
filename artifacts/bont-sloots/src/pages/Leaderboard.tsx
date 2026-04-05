@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 function getColorFromName(name: string) {
   let hash = 0;
@@ -173,16 +173,6 @@ export function Leaderboard() {
         </div>
       )}
 
-      <div className="mt-4 p-3 rounded-lg bg-card border border-border/30 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5 font-semibold text-white mb-1">
-          <TrendingUp className="w-3.5 h-3.5 text-primary" />
-          Market Value Formula
-        </div>
-        <div className="space-y-0.5">
-          <div>Base: £5M &nbsp;|&nbsp; +£100k per App &nbsp;|&nbsp; +£500k per Goal/Assist/MOTM</div>
-          <div className="text-red-400">-£1M per Muppet Award</div>
-        </div>
-      </div>
     </div>
   );
 }
