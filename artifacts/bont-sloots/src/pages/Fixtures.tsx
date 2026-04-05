@@ -4,9 +4,10 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, CalendarDays, Trophy, TrendingUp } from "lucide-react";
+import { MapPin, Clock, CalendarDays, Trophy, TrendingUp, FileText } from "lucide-react";
 import { MotmVotingDialog } from "@/components/MotmVotingDialog";
 import { FixtureValueModal } from "@/components/FixtureValueModal";
+import { PublicMatchReportDialog } from "@/components/MatchReportDialog";
 
 export function Fixtures() {
   const { data: fixtures, isLoading } = useListFixtures({
@@ -15,6 +16,7 @@ export function Fixtures() {
 
   const [votingFixture, setVotingFixture] = useState<{ id: number; opponent: string } | null>(null);
   const [valueFixture, setValueFixture] = useState<{ id: number; opponent: string } | null>(null);
+  const [reportFixture, setReportFixture] = useState<{ id: number; opponent: string } | null>(null);
 
   if (isLoading) {
     return (
@@ -122,6 +124,17 @@ export function Fixtures() {
                 Value Report
               </Button>
             )}
+            {fixture.played && (
+              <Button
+                size="sm"
+                className="w-full gap-2 bg-secondary/80 border border-border/50 text-white/80 hover:bg-secondary"
+                variant="outline"
+                onClick={() => setReportFixture({ id: fixture.id, opponent: fixture.opponent })}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Match Report
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -165,6 +178,15 @@ export function Fixtures() {
           opponent={valueFixture.opponent}
           open={true}
           onOpenChange={(open) => !open && setValueFixture(null)}
+        />
+      )}
+
+      {reportFixture && (
+        <PublicMatchReportDialog
+          fixtureId={reportFixture.id}
+          opponent={reportFixture.opponent}
+          open={true}
+          onOpenChange={(open) => !open && setReportFixture(null)}
         />
       )}
     </>

@@ -9,3 +9,4 @@ export * from "./player_comments";
 export * from "./settings";
 export * from "./player_ratings";
 export * from "./player_value_changes";
+export * from "./match_reports";

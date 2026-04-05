@@ -15,8 +15,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users, Star, Minus as MinusIcon, VoteIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, Users, Star, Minus as MinusIcon, VoteIcon, FileText } from "lucide-react";
 import { format } from "date-fns";
+import { AdminMatchReportDialog } from "@/components/MatchReportDialog";
 
 // Player presence dialog for a single fixture
 function PresenceDialog({ fixtureId, opponent }: { fixtureId: number; opponent: string }) {
@@ -246,6 +247,7 @@ export function AdminFixtures() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingFixture, setEditingFixture] = useState<any>(null);
+  const [reportFixture, setReportFixture] = useState<{ id: number; opponent: string } | null>(null);
 
   const closeVoting = useMutation({
     mutationFn: async (id: number) => {
@@ -408,6 +410,16 @@ export function AdminFixtures() {
                       </Button>
                     )}
                     {fixture.played && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        title="Match report"
+                        onClick={() => setReportFixture({ id: fixture.id, opponent: fixture.opponent })}
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {fixture.played && (
                       <PresenceDialog fixtureId={fixture.id} opponent={fixture.opponent} />
                     )}
                     {fixture.played && (
@@ -497,6 +509,15 @@ export function AdminFixtures() {
           ))
         )}
       </div>
+
+      {reportFixture && (
+        <AdminMatchReportDialog
+          fixtureId={reportFixture.id}
+          opponent={reportFixture.opponent}
+          open={true}
+          onOpenChange={(open) => !open && setReportFixture(null)}
+        />
+      )}
     </div>
   );
 }
