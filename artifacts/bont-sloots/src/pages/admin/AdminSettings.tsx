@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Image, Upload, X, Link } from "lucide-react";
 
-function compressImage(file: File, maxWidth = 1400, quality = 0.82): Promise<string> {
+function compressImage(file: File, maxWidth = 1200, quality = 0.72): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
