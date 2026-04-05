@@ -181,7 +181,6 @@ function PhotoUploader({ playerId, playerName, currentPhotoUrl, onUploaded }: {
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="user"
         className="hidden"
         onChange={handleFileChange}
       />
