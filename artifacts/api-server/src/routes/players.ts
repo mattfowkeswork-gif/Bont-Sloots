@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and } from "drizzle-orm";
+import { calculateXp } from "../lib/xp";
 import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable, playerValueChangesTable } from "@workspace/db";
 import {
   CreatePlayerBody,
@@ -64,6 +65,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
 
   const totalGoals = playerStats.find(s => s.type === "goal")?.count ?? 0;
   const totalAssists = playerStats.find(s => s.type === "assist")?.count ?? 0;
+  const totalCleanSheets = playerStats.find(s => s.type === "clean_sheet")?.count ?? 0;
 
   const playerAwards = await db
     .select({
@@ -202,6 +204,15 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .limit(1);
   const isMuppet = latestMuppet?.playerId === player.id;
 
+  const xp = calculateXp({
+    apps,
+    goals: totalGoals,
+    assists: totalAssists,
+    cleanSheets: totalCleanSheets,
+    momAwards: momCount,
+    muppetAwards: motmCount,
+  });
+
   res.json({
     id: player.id,
     name: player.name,
@@ -212,6 +223,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     createdAt: player.createdAt,
     totalGoals,
     totalAssists,
+    totalCleanSheets,
     momCount,
     motmCount,
     apps,
@@ -220,6 +232,12 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     recentForm,
     matchHistory,
     comments,
+    totalXp: xp.totalXp,
+    progressionXp: xp.progressionXp,
+    level: xp.level,
+    xpIntoLevel: xp.xpIntoLevel,
+    xpForNextLevel: xp.xpForNextLevel,
+    xpBreakdown: xp.xpBreakdown,
     awardHistory: playerAwards.map(a => ({
       id: a.id,
       playerId: a.playerId,

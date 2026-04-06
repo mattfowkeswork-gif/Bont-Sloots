@@ -4,6 +4,7 @@ import {
   db, playersTable, statsTable, awardsTable, fixturePlayersTable,
   motmVotesTable, fixturesTable, playerRatingsTable, playerValueChangesTable,
 } from "@workspace/db";
+import { calculateXp } from "../lib/xp";
 
 const router: IRouter = Router();
 
@@ -69,6 +70,17 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     assistsQuery = assistsQuery.where(and(eq(statsTable.type, "assist"), inArray(statsTable.fixtureId, seasonFixtureIds)) as any);
   }
   const assistCounts = await assistsQuery.groupBy(statsTable.playerId);
+
+  // Clean sheets
+  let cleanSheetsQuery = db
+    .select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(eq(statsTable.type, "clean_sheet"))
+    .$dynamic();
+  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
+    cleanSheetsQuery = cleanSheetsQuery.where(and(eq(statsTable.type, "clean_sheet"), inArray(statsTable.fixtureId, seasonFixtureIds)) as any);
+  }
+  const cleanSheetCounts = await cleanSheetsQuery.groupBy(statsTable.playerId);
 
   // MOTM fan votes
   let motmQuery = db
@@ -164,6 +176,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     const apps = appsCounts.find(a => a.playerId === p.id)?.count ?? 0;
     const goals = goalCounts.find(g => g.playerId === p.id)?.count ?? 0;
     const assists = assistCounts.find(a => a.playerId === p.id)?.count ?? 0;
+    const cleanSheets = cleanSheetCounts.find(c => c.playerId === p.id)?.count ?? 0;
     const motmVotes = motmCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const momAwards = momCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const muppetAwards = muppetCounts.find(m => m.playerId === p.id)?.count ?? 0;
@@ -184,6 +197,8 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
 
     const lastMatchChange = allValueChanges.find(vc => vc.playerId === p.id)?.totalChange ?? null;
 
+    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards });
+
     return {
       playerId: p.id,
       playerName: p.name,
@@ -193,6 +208,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       apps,
       goals,
       assists,
+      cleanSheets,
       motmVotes,
       momAwards,
       muppetAwards,
@@ -202,6 +218,12 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       lastMatchChange,
       isKing,
       isMuppet,
+      totalXp: xp.totalXp,
+      progressionXp: xp.progressionXp,
+      level: xp.level,
+      xpIntoLevel: xp.xpIntoLevel,
+      xpForNextLevel: xp.xpForNextLevel,
+      xpBreakdown: xp.xpBreakdown,
     };
   });
 

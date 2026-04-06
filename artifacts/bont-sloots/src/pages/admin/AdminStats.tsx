@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
-type StatType = "goal" | "assist";
+type StatType = "goal" | "assist" | "clean_sheet";
 
 export function AdminStats() {
   const { data: fixtures } = useListFixtures();
@@ -41,7 +41,7 @@ export function AdminStats() {
       );
     }
 
-    const label = statType === "goal" ? (count === 1 ? "Goal" : "Goals") : (count === 1 ? "Assist" : "Assists");
+    const label = statType === "goal" ? (count === 1 ? "Goal" : "Goals") : statType === "assist" ? (count === 1 ? "Assist" : "Assists") : (count === 1 ? "Clean Sheet" : "Clean Sheets");
     toast({ title: `${count} ${label} added` });
     queryClient.invalidateQueries({ queryKey: getListStatsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
@@ -92,14 +92,14 @@ export function AdminStats() {
 
             <div className="grid gap-2">
               <Label>Stat Type</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   type="button"
                   variant={statType === "goal" ? "default" : "outline"}
                   className="flex-1"
                   onClick={() => setStatType("goal")}
                 >
-                  Goal
+                  ⚽ Goal
                 </Button>
                 <Button
                   type="button"
@@ -107,7 +107,15 @@ export function AdminStats() {
                   className="flex-1"
                   onClick={() => setStatType("assist")}
                 >
-                  Assist
+                  🎯 Assist
+                </Button>
+                <Button
+                  type="button"
+                  variant={statType === "clean_sheet" ? "default" : "outline"}
+                  className="flex-1 min-w-full"
+                  onClick={() => setStatType("clean_sheet")}
+                >
+                  🧤 Clean Sheet
                 </Button>
               </div>
             </div>
@@ -146,7 +154,7 @@ export function AdminStats() {
             >
               {createStat.isPending
                 ? "Saving..."
-                : `Record ${count} ${statType === "goal" ? (count === 1 ? "Goal" : "Goals") : (count === 1 ? "Assist" : "Assists")}`}
+                : `Record ${count} ${statType === "goal" ? (count === 1 ? "Goal" : "Goals") : statType === "assist" ? (count === 1 ? "Assist" : "Assists") : (count === 1 ? "Clean Sheet" : "Clean Sheets")}`}
             </Button>
           </CardContent>
         </Card>

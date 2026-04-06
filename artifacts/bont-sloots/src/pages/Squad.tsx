@@ -1,7 +1,7 @@
 import { useGetSquadStats, getGetSquadStatsQueryKey } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, TrendingUp, TrendingDown, Minus, Target, Shield, Star, Crown } from "lucide-react";
+import { Users, TrendingUp, TrendingDown, Minus, Target, Shield, Star, Crown, Zap } from "lucide-react";
 
 const POSITION_COLORS: Record<string, string> = {
   GK: "bg-emerald-700 text-emerald-100",
@@ -149,7 +149,12 @@ export function Squad() {
     );
   }
 
-  const sorted = [...players].sort((a, b) => b.marketValue - a.marketValue);
+  const sorted = [...players].sort((a, b) => {
+    const aLevel = (a as any).level ?? 0;
+    const bLevel = (b as any).level ?? 0;
+    if (bLevel !== aLevel) return bLevel - aLevel;
+    return b.marketValue - a.marketValue;
+  });
 
   return (
     <div className="pb-4">
@@ -217,9 +222,20 @@ export function Squad() {
                 </div>
 
                 {/* Market value */}
-                <div className={`font-black text-sm ${mvColor} mb-2`}>
+                <div className={`font-black text-sm ${mvColor} mb-1`}>
                   {formatValue(mv)}
                 </div>
+
+                {/* Level badge */}
+                {((player as any).level ?? 0) > 0 && (
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-primary">
+                      <Zap className="w-2.5 h-2.5" />
+                      LVL {(player as any).level}
+                    </span>
+                    <span className="text-[8px] text-muted-foreground font-mono">{(player as any).totalXp ?? 0} XP</span>
+                  </div>
+                )}
 
                 {/* Stats */}
                 <div className="w-full grid grid-cols-3 gap-1 text-[10px] border-t border-white/10 pt-2 mt-auto">

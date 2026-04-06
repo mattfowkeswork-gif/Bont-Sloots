@@ -7,10 +7,46 @@ import {
 import { useParams, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trophy, Star, AlertTriangle, ArrowLeft, Calendar, MessageSquare, Target, Shield, TrendingUp, TrendingDown, Minus, Crown, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Star, AlertTriangle, ArrowLeft, Calendar, MessageSquare, Target, Shield, TrendingUp, TrendingDown, Minus, Crown, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useState } from "react";
+
+function getLevelColor(level: number): string {
+  if (level >= 20) return "text-yellow-400";
+  if (level >= 10) return "text-purple-400";
+  if (level >= 5) return "text-blue-400";
+  return "text-primary";
+}
+
+function getLevelBorderColor(level: number): string {
+  if (level >= 20) return "border-yellow-500/30";
+  if (level >= 10) return "border-purple-500/30";
+  if (level >= 5) return "border-blue-500/30";
+  return "border-primary/30";
+}
+
+function XpProgressBar({ xpIntoLevel, xpForNextLevel, level }: { xpIntoLevel: number; xpForNextLevel: number; level: number }) {
+  const pct = Math.min(100, Math.round((xpIntoLevel / xpForNextLevel) * 100));
+  const color = getLevelColor(level);
+  const barColor = level >= 20 ? "bg-yellow-400" : level >= 10 ? "bg-purple-400" : level >= 5 ? "bg-blue-400" : "bg-primary";
+
+  return (
+    <div className="w-full space-y-1.5">
+      <div className="flex justify-between items-center text-xs">
+        <span className={`font-bold ${color}`}>Level {level}</span>
+        <span className="text-muted-foreground font-mono">{xpIntoLevel} / {xpForNextLevel} XP</span>
+      </div>
+      <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${barColor}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="text-[10px] text-muted-foreground text-right">{pct}% to Level {level + 1}</p>
+    </div>
+  );
+}
 
 function getColorFromName(name: string) {
   let hash = 0;
@@ -169,6 +205,44 @@ export function PlayerProfile() {
           </div>
         )}
       </div>
+
+      {/* XP & Level */}
+      {(player as any).level !== undefined && (
+        <div className={`bg-card border ${getLevelBorderColor((player as any).level)} rounded-xl p-5`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className={`w-5 h-5 ${getLevelColor((player as any).level)}`} />
+            <span className="font-bold text-white">Player Level</span>
+            <span className={`ml-auto text-3xl font-black ${getLevelColor((player as any).level)}`}>
+              LVL {(player as any).level}
+            </span>
+          </div>
+
+          <XpProgressBar
+            xpIntoLevel={(player as any).xpIntoLevel ?? 0}
+            xpForNextLevel={(player as any).xpForNextLevel ?? 500}
+            level={(player as any).level ?? 0}
+          />
+
+          <div className="mt-4 pt-3 border-t border-border/30">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-muted-foreground">Total XP</span>
+              <span className={`font-black font-mono text-sm ${(player as any).totalXp >= 0 ? "text-white" : "text-red-400"}`}>
+                {(player as any).totalXp > 0 ? "+" : ""}{(player as any).totalXp ?? 0} XP
+              </span>
+            </div>
+            {(player as any).xpBreakdown && (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                {(player as any).xpBreakdown.appearances > 0 && <span className="flex justify-between"><span>Appearances</span><span className="text-white font-mono">+{(player as any).xpBreakdown.appearances}</span></span>}
+                {(player as any).xpBreakdown.goals > 0 && <span className="flex justify-between"><span>Goals</span><span className="text-primary font-mono">+{(player as any).xpBreakdown.goals}</span></span>}
+                {(player as any).xpBreakdown.assists > 0 && <span className="flex justify-between"><span>Assists</span><span className="text-white font-mono">+{(player as any).xpBreakdown.assists}</span></span>}
+                {(player as any).xpBreakdown.cleanSheets > 0 && <span className="flex justify-between"><span>Clean Sheets</span><span className="text-emerald-400 font-mono">+{(player as any).xpBreakdown.cleanSheets}</span></span>}
+                {(player as any).xpBreakdown.mom > 0 && <span className="flex justify-between"><span>Man of Match</span><span className="text-yellow-400 font-mono">+{(player as any).xpBreakdown.mom}</span></span>}
+                {(player as any).xpBreakdown.muppet < 0 && <span className="flex justify-between"><span>Muppet Awards</span><span className="text-red-400 font-mono">{(player as any).xpBreakdown.muppet}</span></span>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Scouting Profile */}
       {player.scoutingProfile && (
