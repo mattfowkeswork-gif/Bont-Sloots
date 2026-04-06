@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, fixturePlayersTable, playersTable, fixturesTable } from "@workspace/db";
+import { recalculateFixtureValues } from "./value_calculator";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -75,6 +76,11 @@ router.put("/fixtures/:id/players", async (req, res): Promise<void> => {
     playerName: p.name,
     present: presentIds.has(p.id),
   }));
+
+  const [fixture] = await db.select().from(fixturesTable).where(eq(fixturesTable.id, fixtureId));
+  if (fixture?.played) {
+    await recalculateFixtureValues(fixtureId);
+  }
 
   res.json(result);
 });
