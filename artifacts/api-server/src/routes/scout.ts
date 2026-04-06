@@ -1,13 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, settingsTable, fixturesTable } from "@workspace/db";
+import { db, settingsTable } from "@workspace/db";
 import { z } from "zod/v4";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-});
 
 const router: IRouter = Router();
 
@@ -124,6 +118,7 @@ interface ScoutData {
   verdicts: string[];
   teamUrl: string;
   isOverride: boolean;
+  notes?: string;
 }
 
 router.get("/scout", async (req, res): Promise<void> => {
@@ -138,7 +133,7 @@ router.get("/scout", async (req, res): Promise<void> => {
   if (override) {
     try {
       const data = JSON.parse(override.value) as Omit<ScoutData, "isOverride">;
-      res.json({ ...data, verdicts: buildVerdict(data.rank, data.ga, data.gf), isOverride: true });
+      res.json({ ...data, verdicts: buildVerdict(data.rank, data.ga, data.gf), isOverride: true, notes: data.notes ?? "" });
       return;
     } catch {
     }
@@ -203,6 +198,7 @@ const ScoutOverrideBody = z.object({
   ga: z.number().int().min(0),
   form: z.string().max(20),
   teamUrl: z.string().optional().default(""),
+  notes: z.string().optional().default(""),
 });
 
 router.post("/admin/scout-override", async (req, res): Promise<void> => {
@@ -225,160 +221,5 @@ router.delete("/admin/scout-override", async (req, res): Promise<void> => {
   res.json({ ok: true });
 });
 
-const AI_SUMMARY_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-
-function summaryKey(opponent: string): string {
-  return `scout_ai_summary_${normaliseName(opponent).replace(/\s+/g, "_")}`;
-}
-
-router.get("/scout/summary", async (req, res): Promise<void> => {
-  const opponentRaw = (req.query.opponent as string | undefined) ?? "";
-  if (!opponentRaw) {
-    res.status(400).json({ error: "opponent query param required" });
-    return;
-  }
-
-  // Return cached summary if fresh enough
-  const cacheKey = summaryKey(opponentRaw);
-  const [cached] = await db.select().from(settingsTable).where(eq(settingsTable.key, cacheKey));
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached.value) as { summary: string; generatedAt: string };
-      const age = Date.now() - new Date(parsed.generatedAt).getTime();
-      if (age < AI_SUMMARY_TTL_MS) {
-        res.json({ summary: parsed.summary, cached: true });
-        return;
-      }
-    } catch { /* stale/invalid cache — regenerate */ }
-  }
-
-  // Gather scout data
-  let scoutData: ScoutData | null = null;
-  try {
-    const [standings, formMap] = await Promise.all([scrapeStandings(), scrapeForm()]);
-    const normOpponent = normaliseName(opponentRaw);
-    let bestMatch: typeof standings[0] | null = null;
-    let bestScore = 0;
-    for (const team of standings) {
-      const score = scoreSimilarity(normaliseName(team.name), normOpponent);
-      if (score > bestScore) { bestScore = score; bestMatch = team; }
-    }
-    if (bestMatch && bestScore >= 0.2) {
-      let form = formMap.get(bestMatch.name) ?? "";
-      if (!form) {
-        for (const [name, f] of formMap.entries()) {
-          if (scoreSimilarity(normaliseName(name), normaliseName(bestMatch.name)) > 0.5) { form = f; break; }
-        }
-      }
-      scoutData = {
-        name: bestMatch.name,
-        rank: bestMatch.rank,
-        gf: bestMatch.gf,
-        ga: bestMatch.ga,
-        form,
-        verdicts: buildVerdict(bestMatch.rank, bestMatch.ga, bestMatch.gf),
-        teamUrl: bestMatch.teamPath ? `${LR_BASE}${bestMatch.teamPath}` : "",
-        isOverride: false,
-      };
-    }
-  } catch { /* scraping failed — still try to build summary from H2H */ }
-
-  // Fetch all our played fixtures for H2H + recent form
-  const allPlayed = await db.select().from(fixturesTable).where(eq(fixturesTable.played, true));
-
-  // H2H: match opponent name fuzzily against DB fixture opponents
-  const normOpp = normaliseName(opponentRaw);
-  const h2hFixtures = allPlayed.filter(f => scoreSimilarity(normaliseName(f.opponent), normOpp) >= 0.4);
-
-  const h2hStats = h2hFixtures.reduce(
-    (acc, f) => {
-      const bsScore = f.isHome ? f.homeScore! : f.awayScore!;
-      const opScore = f.isHome ? f.awayScore! : f.homeScore!;
-      if (bsScore > opScore) acc.wins++;
-      else if (bsScore === opScore) acc.draws++;
-      else acc.losses++;
-      acc.gf += bsScore;
-      acc.ga += opScore;
-      return acc;
-    },
-    { wins: 0, draws: 0, losses: 0, gf: 0, ga: 0 }
-  );
-
-  const h2hLines = h2hFixtures
-    .sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime())
-    .slice(0, 5)
-    .map(f => {
-      const bsScore = f.isHome ? f.homeScore! : f.awayScore!;
-      const opScore = f.isHome ? f.awayScore! : f.homeScore!;
-      const result = bsScore > opScore ? "W" : bsScore === opScore ? "D" : "L";
-      return `  ${f.matchDate}: ${result} ${bsScore}-${opScore} (${f.isHome ? "Home" : "Away"})`;
-    });
-
-  // Our recent form (last 6 played)
-  const recentUs = [...allPlayed]
-    .sort((a, b) => new Date(b.matchDate).getTime() - new Date(a.matchDate).getTime())
-    .slice(0, 6)
-    .map(f => {
-      const bsScore = f.isHome ? f.homeScore! : f.awayScore!;
-      const opScore = f.isHome ? f.awayScore! : f.homeScore!;
-      const result = bsScore > opScore ? "W" : bsScore === opScore ? "D" : "L";
-      return `  ${result} ${bsScore}-${opScore} vs ${f.opponent}`;
-    });
-
-  // Build prompt
-  const leagueSection = scoutData
-    ? `League position: #${scoutData.rank} | Goals scored: ${scoutData.gf} | Goals conceded: ${scoutData.ga} | GD: ${scoutData.gf - scoutData.ga}
-Recent form (oldest to newest): ${scoutData.form || "unknown"}`
-    : "League data unavailable.";
-
-  const h2hSection = h2hFixtures.length > 0
-    ? `Overall H2H: ${h2hStats.wins}W ${h2hStats.draws}D ${h2hStats.losses}L (GF ${h2hStats.gf} GA ${h2hStats.ga})
-Recent meetings:\n${h2hLines.join("\n")}`
-    : "No previous meetings on record.";
-
-  const ourFormSection = recentUs.length > 0
-    ? recentUs.join("\n")
-    : "No recent results on record.";
-
-  const prompt = `You are a scout analyst for Bont Sloots FC, a 6-a-side football team playing in a local league.
-
-Upcoming opponent: ${opponentRaw}
-
-OPPONENT LEAGUE DATA:
-${leagueSection}
-
-HEAD-TO-HEAD RECORD (Bont Sloots vs ${opponentRaw}):
-${h2hSection}
-
-BONT SLOOTS RECENT RESULTS:
-${ourFormSection}
-
-Write a punchy, laddish 2-3 paragraph scouting report for the lads. Cover:
-1. How good is this opponent — are they title contenders, mid-table, or easy pickings?
-2. Are they an attacking threat or are they defensively solid? Back it up with the stats.
-3. Based on the H2H and current form, how likely are Bont Sloots to win — and what should the lads watch out for?
-
-Keep it fun, direct and confident. Use specific numbers. No bullet points — just flowing paragraphs.`;
-
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 600,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const summary = completion.choices[0]?.message?.content ?? "Unable to generate report.";
-
-    // Cache the result
-    const value = JSON.stringify({ summary, generatedAt: new Date().toISOString() });
-    await db
-      .insert(settingsTable)
-      .values({ key: cacheKey, value, updatedAt: new Date() })
-      .onConflictDoUpdate({ target: settingsTable.key, set: { value, updatedAt: new Date() } });
-
-    res.json({ summary, cached: false });
-  } catch (err: any) {
-    res.status(503).json({ error: "AI summary generation failed", detail: err?.message });
-  }
-});
 
 export default router;

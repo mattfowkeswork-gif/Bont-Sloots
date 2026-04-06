@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 import { Search, Trash2, RefreshCw, Save } from "lucide-react";
 
 interface ScoutData {
@@ -16,6 +17,7 @@ interface ScoutData {
   teamUrl?: string;
   verdicts?: string[];
   isOverride?: boolean;
+  notes?: string;
 }
 
 export function AdminScout() {
@@ -30,6 +32,7 @@ export function AdminScout() {
     ga: "",
     form: "",
     teamUrl: "",
+    notes: "",
   });
 
   const { data: liveData, isLoading: liveLoading, isError: liveError, refetch: refetchLive } = useQuery<ScoutData>({
@@ -66,6 +69,7 @@ export function AdminScout() {
         ga: parseInt(overrideForm.ga) || 0,
         form: overrideForm.form.toUpperCase().replace(/[^WDL]/g, ""),
         teamUrl: overrideForm.teamUrl,
+        notes: overrideForm.notes,
       };
       const res = await fetch("/api/admin/scout-override", {
         method: "POST",
@@ -96,7 +100,7 @@ export function AdminScout() {
       toast({ title: "Override cleared", description: `Live data will now be used for ${previewOpponent}` });
       queryClient.invalidateQueries({ queryKey: ["scout", previewOpponent] });
       queryClient.invalidateQueries({ queryKey: ["scout-override", previewOpponent] });
-      setOverrideForm({ rank: "", gf: "", ga: "", form: "", teamUrl: "" });
+      setOverrideForm({ rank: "", gf: "", ga: "", form: "", teamUrl: "", notes: "" });
       refetchOverride();
     },
     onError: () => toast({ title: "Error", description: "Failed to clear override", variant: "destructive" }),
@@ -105,17 +109,30 @@ export function AdminScout() {
   function handleSearch() {
     if (!opponentInput.trim()) return;
     setPreviewOpponent(opponentInput.trim());
-    setOverrideForm({ rank: "", gf: "", ga: "", form: "", teamUrl: "" });
+    setOverrideForm({ rank: "", gf: "", ga: "", form: "", teamUrl: "", notes: "" });
   }
 
   function populateFromLive() {
     if (!liveData) return;
-    setOverrideForm({
+    setOverrideForm(f => ({
+      ...f,
       rank: String(liveData.rank),
       gf: String(liveData.gf),
       ga: String(liveData.ga),
       form: liveData.form,
       teamUrl: liveData.teamUrl ?? "",
+    }));
+  }
+
+  function populateFromOverride() {
+    if (!existingOverride) return;
+    setOverrideForm({
+      rank: String(existingOverride.rank),
+      gf: String(existingOverride.gf),
+      ga: String(existingOverride.ga),
+      form: existingOverride.form,
+      teamUrl: existingOverride.teamUrl ?? "",
+      notes: existingOverride.notes ?? "",
     });
   }
 
@@ -233,8 +250,15 @@ export function AdminScout() {
             </CardHeader>
             <CardContent>
               {existingOverride && (
-                <div className="mb-4 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-xs text-yellow-400">
-                  An override is currently active for this opponent.
+                <div className="mb-4 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-xs text-yellow-400 flex items-center justify-between gap-2">
+                  <span>An override is currently active for this opponent.</span>
+                  <button
+                    type="button"
+                    onClick={populateFromOverride}
+                    className="shrink-0 underline hover:text-yellow-300"
+                  >
+                    Load into form
+                  </button>
                 </div>
               )}
               <div className="space-y-4">
@@ -289,6 +313,16 @@ export function AdminScout() {
                     value={overrideForm.teamUrl}
                     onChange={e => setOverrideForm(f => ({ ...f, teamUrl: e.target.value }))}
                     className="bg-background border-border/50 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Scout Notes (shown on dashboard)</Label>
+                  <Textarea
+                    placeholder="Write a match preview or notes about this opponent..."
+                    value={overrideForm.notes}
+                    onChange={e => setOverrideForm(f => ({ ...f, notes: e.target.value }))}
+                    className="bg-background border-border/50 text-xs"
+                    rows={4}
                   />
                 </div>
                 <Button
