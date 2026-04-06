@@ -106,7 +106,7 @@ export function calculateXp(input: PlayerXpInput): PlayerXpResult {
   const totalXp = progressionXp + xpBreakdown.muppet;
 
   const level = calculateLevel(progressionXp);
-  const xpAtCurrentLevel = xpToReachLevel(level - 1);
+  const xpAtCurrentLevel = xpToReachLevel(level) - xpRequiredForLevel(1);
   const xpIntoLevel = progressionXp - xpAtCurrentLevel;
   const xpForNextLevel = xpRequiredForLevel(level + 1);
 
