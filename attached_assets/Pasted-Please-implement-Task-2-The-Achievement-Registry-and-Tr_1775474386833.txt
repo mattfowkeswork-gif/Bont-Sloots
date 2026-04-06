@@ -1,0 +1,43 @@
+Please implement "Task 2": The Achievement Registry and Trophy Cabinet. 
+
+1. Achievement Registry:
+Automatically award these badges based on match stats. When a badge is earned, its XP reward must be added to the player's Total XP immediately.
+
+Tier 1: Basics (Easy)
+- First Blood (🆕): 1st Career Goal. [+100 XP]
+- The Playmaker (🅰️): 1st Career Assist. [+100 XP]
+- Safe Hands (🧤): 1st Career Clean Sheet. [+100 XP]
+- Match Fit (🏃‍♂️): 5 Total Career Appearances. [+250 XP]
+- Off the Mark (🎯): 1st Career Goal OR Assist. [+150 XP]
+
+Tier 2: The Grinders (Medium)
+- The Specialist (🎯): 10 Career Goals. [+750 XP]
+- The Engine (⚙️): 10 Career Appearances. [+750 XP]
+- Iron Curtain (🛡️): 5 Career Clean Sheets. [+750 XP]
+- The Architect (📐): 5 Career Assists. [+500 XP]
+- Mr. Consistent (⭐): Maintain an OVR of 75+ for 3 consecutive games. [+1000 XP]
+
+Tier 3: The Elite (Hard)
+- The Half-Centurion (🎖️): 50 Total Career Appearances. [+2500 XP]
+- The Natural (🎩): 3 Career Hat-tricks (3 goals in one game). [+2000 XP]
+- Golden Glove Elite (🧤✨): 20 Total Career Clean Sheets. [+2500 XP]
+- The Double-Double (🎭): 20 Career Goals AND 20 Career Assists. [+3000 XP]
+
+Tier 4: The Legendary (Very Hard)
+- The Centurion (💯): 100 Total Career Appearances. [+5000 XP]
+- Club Icon (👑): 10 Career Man of the Match (MOTM) awards. [+4000 XP]
+- Statue Outside the Ground (🗿): Reach Level 50. [+7500 XP]
+
+Tier 5: The Secrets (Rare)
+- Display these as a greyed-out [❓] with the title '???' until unlocked:
+- The Phoenix (🔥): Win MOTM in the game immediately following a Muppet award. [+800 XP]
+- The Joker (🃏): Record an Assist and a Muppet award in the same match. [+300 XP]
+- The Carry (🐘): Win MOTM in a match where the team lost. [+1200 XP]
+- The Professional (👔): 10 Career Appearances with zero total Muppet awards. [+1500 XP]
+- The Ghost (👻): 3 consecutive appearances with 0 Goals, 0 Assists, and 0 Clean Sheets. [+50 XP]
+
+2. UI Requirements:
+- Add a 'Trophy Room' section to the bottom of each Player Profile page.
+- Group achievements by Tier (Basics, Grinders, Elite, Legendary, Secrets).
+- Use the icons provided. Legendary icons should have a "Gold/Glow" styling.
+- Ensure the XP from these achievements is added to the player's total and helps them level up.

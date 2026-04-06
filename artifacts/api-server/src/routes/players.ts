@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { calculateXp } from "../lib/xp";
+import {
+  computeAchievements,
+  computeComplexAchievements,
+  totalAchievementXp,
+  type PlayerMatchForAchievements,
+} from "../lib/achievements";
 import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable, playerValueChangesTable } from "@workspace/db";
 import {
   CreatePlayerBody,
@@ -177,6 +183,26 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .where(and(eq(statsTable.playerId, player.id), eq(statsTable.type, "assist")))
     .groupBy(statsTable.fixtureId);
 
+  const cleanSheetsPerApp = await db
+    .select({ fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(and(eq(statsTable.playerId, player.id), eq(statsTable.type, "clean_sheet")))
+    .groupBy(statsTable.fixtureId);
+
+  // Build per-match data for achievement computation
+  const momAwardFixtureIds = new Set(playerAwards.filter(a => a.type === "mom").map(a => a.fixtureId));
+  const muppetAwardFixtureIds = new Set(playerAwards.filter(a => a.type === "motm").map(a => a.fixtureId));
+
+  const matchDataForAchievements: PlayerMatchForAchievements[] = allApps.map(app => ({
+    fixtureId: app.fixtureId,
+    matchDate: app.matchDate ?? new Date(0),
+    goals: goalsPerApp.find(g => g.fixtureId === app.fixtureId)?.count ?? 0,
+    assists: assistsPerApp.find(a => a.fixtureId === app.fixtureId)?.count ?? 0,
+    cleanSheets: cleanSheetsPerApp.find(c => c.fixtureId === app.fixtureId)?.count ?? 0,
+    hasMomAward: momAwardFixtureIds.has(app.fixtureId),
+    hasMuppetAward: muppetAwardFixtureIds.has(app.fixtureId),
+  }));
+
   const matchHistory = allApps.map(app => {
     const vc = valueChangeMap.get(app.fixtureId);
     return {
@@ -204,13 +230,23 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .limit(1);
   const isMuppet = latestMuppet?.playerId === player.id;
 
+  // Compute achievements (two-pass: base level first, then with achievement XP)
+  const baseXp = calculateXp({ apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets, momAwards: momCount, muppetAwards: motmCount });
+  const complex = computeComplexAchievements(matchDataForAchievements);
+  const achievements = computeAchievements({
+    apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets,
+    momAwards: momCount, muppetAwards: motmCount,
+    baseLevel: baseXp.level,
+    hatTrickCount: complex.hatTrickCount,
+    isPhoenix: complex.isPhoenix,
+    isJoker: complex.isJoker,
+    isGhost: complex.isGhost,
+  });
+  const achXp = totalAchievementXp(achievements);
+
   const xp = calculateXp({
-    apps,
-    goals: totalGoals,
-    assists: totalAssists,
-    cleanSheets: totalCleanSheets,
-    momAwards: momCount,
-    muppetAwards: motmCount,
+    apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets,
+    momAwards: momCount, muppetAwards: motmCount, achievementXp: achXp,
   });
 
   res.json({
@@ -238,6 +274,8 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     xpIntoLevel: xp.xpIntoLevel,
     xpForNextLevel: xp.xpForNextLevel,
     xpBreakdown: xp.xpBreakdown,
+    achievementXp: achXp,
+    achievements,
     awardHistory: playerAwards.map(a => ({
       id: a.id,
       playerId: a.playerId,

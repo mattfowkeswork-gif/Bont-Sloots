@@ -48,6 +48,118 @@ function XpProgressBar({ xpIntoLevel, xpForNextLevel, level }: { xpIntoLevel: nu
   );
 }
 
+type AchievementTier = "basic" | "grinder" | "elite" | "legendary" | "secret";
+
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  tier: AchievementTier;
+  xp: number;
+  secret?: boolean;
+  earned: boolean;
+}
+
+const TIER_LABELS: Record<AchievementTier, string> = {
+  basic: "Basics",
+  grinder: "The Grinders",
+  elite: "Elite",
+  legendary: "Legendary",
+  secret: "Secrets",
+};
+
+const TIER_ORDER: AchievementTier[] = ["basic", "grinder", "elite", "legendary", "secret"];
+
+function AchievementBadge({ ach }: { ach: Achievement }) {
+  const [showTip, setShowTip] = useState(false);
+  const isSecretLocked = ach.secret && !ach.earned;
+  const isLegendary = ach.tier === "legendary";
+
+  let containerClass = "relative flex flex-col items-center gap-1 cursor-pointer select-none";
+  let iconClass = "text-2xl w-12 h-12 flex items-center justify-center rounded-xl border-2 transition-all";
+
+  if (!ach.earned) {
+    iconClass += " opacity-30 grayscale border-border/30 bg-card";
+  } else if (isLegendary) {
+    iconClass += " border-yellow-500/60 bg-yellow-500/10 shadow-[0_0_12px_2px] shadow-yellow-500/30 ring-1 ring-yellow-400/40";
+  } else {
+    iconClass += " border-primary/30 bg-primary/10";
+  }
+
+  return (
+    <div
+      className={containerClass}
+      onClick={() => setShowTip(s => !s)}
+      onMouseEnter={() => setShowTip(true)}
+      onMouseLeave={() => setShowTip(false)}
+    >
+      <div className={iconClass}>
+        {isSecretLocked ? "❓" : ach.icon}
+      </div>
+      <span className={`text-[9px] font-bold text-center leading-tight max-w-[56px] ${ach.earned ? (isLegendary ? "text-yellow-400" : "text-white") : "text-muted-foreground"}`}>
+        {isSecretLocked ? "???" : ach.name}
+      </span>
+      {ach.earned && (
+        <span className="text-[8px] font-mono text-primary">+{ach.xp} XP</span>
+      )}
+      {showTip && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 w-44 bg-popover border border-border rounded-lg p-2 shadow-xl text-center pointer-events-none">
+          <p className="text-[11px] font-bold text-white mb-0.5">
+            {isSecretLocked ? "???" : ach.name}
+          </p>
+          <p className="text-[10px] text-muted-foreground leading-snug">
+            {isSecretLocked ? "Keep playing to discover this secret achievement" : ach.description}
+          </p>
+          {!isSecretLocked && (
+            <p className={`text-[10px] font-mono mt-1 ${ach.earned ? "text-primary" : "text-muted-foreground/50"}`}>
+              {ach.earned ? `+${ach.xp} XP earned` : `+${ach.xp} XP locked`}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TrophyRoom({ achievements }: { achievements: Achievement[] }) {
+  const byTier = TIER_ORDER.map(tier => ({
+    tier,
+    label: TIER_LABELS[tier],
+    items: achievements.filter(a => a.tier === tier),
+  }));
+  const totalEarned = achievements.filter(a => a.earned).length;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-yellow-400" />
+          <span className="font-bold text-white">Trophy Room</span>
+        </div>
+        <span className="text-xs text-muted-foreground">{totalEarned} / {achievements.length} unlocked</span>
+      </div>
+      {byTier.map(({ tier, label, items }) => (
+        <div key={tier}>
+          <p className={`text-[10px] uppercase tracking-widest font-bold mb-3 ${
+            tier === "legendary" ? "text-yellow-400" :
+            tier === "elite" ? "text-purple-400" :
+            tier === "secret" ? "text-pink-400" :
+            "text-muted-foreground"
+          }`}>
+            {label}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {items.map(ach => (
+              <AchievementBadge key={ach.id} ach={ach} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function getColorFromName(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -238,9 +350,17 @@ export function PlayerProfile() {
                 {(player as any).xpBreakdown.cleanSheets > 0 && <span className="flex justify-between"><span>Clean Sheets</span><span className="text-emerald-400 font-mono">+{(player as any).xpBreakdown.cleanSheets}</span></span>}
                 {(player as any).xpBreakdown.mom > 0 && <span className="flex justify-between"><span>Man of Match</span><span className="text-yellow-400 font-mono">+{(player as any).xpBreakdown.mom}</span></span>}
                 {(player as any).xpBreakdown.muppet < 0 && <span className="flex justify-between"><span>Muppet Awards</span><span className="text-red-400 font-mono">{(player as any).xpBreakdown.muppet}</span></span>}
+                {((player as any).achievementXp ?? 0) > 0 && <span className="flex justify-between col-span-2"><span>🏆 Achievements</span><span className="text-yellow-400 font-mono">+{(player as any).achievementXp}</span></span>}
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Trophy Room */}
+      {(player as any).achievements && (player as any).achievements.length > 0 && (
+        <div className="bg-card border border-yellow-500/20 rounded-xl p-5">
+          <TrophyRoom achievements={(player as any).achievements} />
         </div>
       )}
 

@@ -5,6 +5,7 @@ import {
   motmVotesTable, fixturesTable, playerRatingsTable, playerValueChangesTable,
 } from "@workspace/db";
 import { calculateXp } from "../lib/xp";
+import { computeAchievements, computeComplexAchievements, totalAchievementXp, type PlayerMatchForAchievements } from "../lib/achievements";
 
 const router: IRouter = Router();
 
@@ -151,6 +152,42 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   }
   const valueTotals = await valueQuery.groupBy(playerValueChangesTable.playerId);
 
+  // --- Achievement batch queries ---
+  // Per-fixture goal counts per player (hat-tricks)
+  const goalsPerFixtureAll = await db
+    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(eq(statsTable.type, "goal"))
+    .groupBy(statsTable.playerId, statsTable.fixtureId);
+
+  // Per-fixture assist counts per player (Joker)
+  const assistsPerFixtureAll = await db
+    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(eq(statsTable.type, "assist"))
+    .groupBy(statsTable.playerId, statsTable.fixtureId);
+
+  // Per-fixture clean sheet counts per player (Ghost)
+  const cleanSheetsPerFixtureAll = await db
+    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(eq(statsTable.type, "clean_sheet"))
+    .groupBy(statsTable.playerId, statsTable.fixtureId);
+
+  // All appearances with fixture dates (Ghost, Phoenix)
+  const allAppsWithDates = await db
+    .select({ playerId: fixturePlayersTable.playerId, fixtureId: fixturePlayersTable.fixtureId, matchDate: fixturesTable.matchDate })
+    .from(fixturePlayersTable)
+    .innerJoin(fixturesTable, eq(fixturePlayersTable.fixtureId, fixturesTable.id))
+    .where(eq(fixturePlayersTable.present, true));
+
+  // Awards with fixture dates (Phoenix, Joker)
+  const allAwardsWithDates = await db
+    .select({ playerId: awardsTable.playerId, fixtureId: awardsTable.fixtureId, type: awardsTable.type, matchDate: fixturesTable.matchDate })
+    .from(awardsTable)
+    .innerJoin(fixturesTable, eq(awardsTable.fixtureId, fixturesTable.id));
+  // --- End achievement batch queries ---
+
   // Recent form: last 3 match value changes per player (from player_value_changes, joined with fixtures for date)
   const allValueChanges = await db
     .select({
@@ -197,7 +234,37 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
 
     const lastMatchChange = allValueChanges.find(vc => vc.playerId === p.id)?.totalChange ?? null;
 
-    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards });
+    // Build per-match data for this player's achievements
+    const playerApps = allAppsWithDates.filter(a => a.playerId === p.id);
+    const playerGoalsPerFixture = goalsPerFixtureAll.filter(g => g.playerId === p.id);
+    const playerAssistsPerFixture = assistsPerFixtureAll.filter(a => a.playerId === p.id);
+    const playerCleanSheetsPerFixture = cleanSheetsPerFixtureAll.filter(c => c.playerId === p.id);
+    const playerAwardsForAch = allAwardsWithDates.filter(a => a.playerId === p.id);
+    const momAwardFids = new Set(playerAwardsForAch.filter(a => a.type === "mom").map(a => a.fixtureId));
+    const muppetAwardFids = new Set(playerAwardsForAch.filter(a => a.type === "motm").map(a => a.fixtureId));
+
+    const matchDataForAch: PlayerMatchForAchievements[] = playerApps.map(app => ({
+      fixtureId: app.fixtureId,
+      matchDate: app.matchDate ?? new Date(0),
+      goals: playerGoalsPerFixture.find(g => g.fixtureId === app.fixtureId)?.count ?? 0,
+      assists: playerAssistsPerFixture.find(a => a.fixtureId === app.fixtureId)?.count ?? 0,
+      cleanSheets: playerCleanSheetsPerFixture.find(c => c.fixtureId === app.fixtureId)?.count ?? 0,
+      hasMomAward: momAwardFids.has(app.fixtureId),
+      hasMuppetAward: muppetAwardFids.has(app.fixtureId),
+    }));
+
+    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards });
+    const complex = computeComplexAchievements(matchDataForAch);
+    const playerAchievements = computeAchievements({
+      apps, goals, assists, cleanSheets, momAwards, muppetAwards,
+      baseLevel: baseXp.level,
+      hatTrickCount: complex.hatTrickCount,
+      isPhoenix: complex.isPhoenix,
+      isJoker: complex.isJoker,
+      isGhost: complex.isGhost,
+    });
+    const achXp = totalAchievementXp(playerAchievements);
+    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, achievementXp: achXp });
 
     return {
       playerId: p.id,
@@ -224,6 +291,8 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       xpIntoLevel: xp.xpIntoLevel,
       xpForNextLevel: xp.xpForNextLevel,
       xpBreakdown: xp.xpBreakdown,
+      achievementXp: achXp,
+      achievementCount: playerAchievements.filter(a => a.earned).length,
     };
   });
 

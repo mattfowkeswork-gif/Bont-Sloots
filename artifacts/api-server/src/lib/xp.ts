@@ -14,6 +14,7 @@ export interface PlayerXpInput {
   cleanSheets: number;
   momAwards: number;
   muppetAwards: number;
+  achievementXp?: number;
 }
 
 export interface PlayerXpResult {
@@ -81,13 +82,15 @@ export function calculateXp(input: PlayerXpInput): PlayerXpResult {
     muppet: input.muppetAwards * XP_VALUES.muppet,
   };
 
-  const progressionXp =
+  const baseProgressionXp =
     xpBreakdown.appearances +
     xpBreakdown.goals +
     xpBreakdown.assists +
     xpBreakdown.cleanSheets +
     xpBreakdown.mom;
 
+  const achievementBonus = input.achievementXp ?? 0;
+  const progressionXp = baseProgressionXp + achievementBonus;
   const totalXp = progressionXp + xpBreakdown.muppet;
 
   const level = calculateLevel(progressionXp);
