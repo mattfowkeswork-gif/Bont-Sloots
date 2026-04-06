@@ -18,6 +18,7 @@ import adminRecalculateRouter from "./admin_recalculate";
 import scoutRouter from "./scout";
 import matchReportsRouter from "./match_reports";
 import storageRouter from "./storage";
+import playerXpBonusesRouter from "./player_xp_bonuses";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use(adminRecalculateRouter);
 router.use(scoutRouter);
 router.use(matchReportsRouter);
 router.use(storageRouter);
+router.use(playerXpBonusesRouter);
 
 export default router;

@@ -7,6 +7,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +31,11 @@ export function AdminStats() {
 
   const [emergencyGkStats, setEmergencyGkStats] = useState<EmergencyGkStat[]>([]);
   const [loadingEmergencyGk, setLoadingEmergencyGk] = useState<Set<number>>(new Set());
+
+  const [bonusPlayerId, setBonusPlayerId] = useState<string>("");
+  const [bonusAmount, setBonusAmount] = useState<string>("");
+  const [bonusReason, setBonusReason] = useState<string>("");
+  const [savingBonus, setSavingBonus] = useState(false);
 
   const playedFixtures = fixtures?.filter(f => f.played) || [];
 
@@ -105,6 +111,32 @@ export function AdminStats() {
         next.delete(playerIdNum);
         return next;
       });
+    }
+  };
+
+  const handleSaveBonus = async () => {
+    const amount = parseInt(bonusAmount);
+    if (!bonusPlayerId || isNaN(amount) || amount <= 0 || !bonusReason.trim()) {
+      toast({ title: "Please fill in all fields with valid values", variant: "destructive" });
+      return;
+    }
+    setSavingBonus(true);
+    try {
+      const res = await fetch(`/api/players/${bonusPlayerId}/xp-bonuses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, reason: bonusReason.trim() }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      toast({ title: `+${amount} XP bonus awarded ⭐` });
+      queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
+      setBonusAmount("");
+      setBonusReason("");
+    } catch {
+      toast({ title: "Failed to save XP bonus", variant: "destructive" });
+    } finally {
+      setSavingBonus(false);
     }
   };
 
@@ -214,6 +246,61 @@ export function AdminStats() {
               {createStat.isPending
                 ? "Saving..."
                 : `Record ${count} ${statType === "goal" ? (count === 1 ? "Goal" : "Goals") : statType === "assist" ? (count === 1 ? "Assist" : "Assists") : (count === 1 ? "Clean Sheet" : "Clean Sheets")}`}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Manual XP Bonus Section */}
+      <div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              ⭐ Manual XP Bonus
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Gift XP to a player and leave a commendation that appears on their profile.
+            </p>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-4">
+            <div className="grid gap-2">
+              <Label>Player</Label>
+              <Select value={bonusPlayerId} onValueChange={setBonusPlayerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select player" />
+                </SelectTrigger>
+                <SelectContent>
+                  {players?.map(p => (
+                    <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Manual XP Bonus</Label>
+              <Input
+                type="number"
+                min={1}
+                placeholder="e.g. 250"
+                value={bonusAmount}
+                onChange={e => setBonusAmount(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Bonus Reason</Label>
+              <Input
+                type="text"
+                placeholder="e.g. Top effort in training"
+                value={bonusReason}
+                onChange={e => setBonusReason(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleSaveBonus}
+              className="w-full"
+              disabled={savingBonus || !bonusPlayerId || !bonusAmount || !bonusReason.trim()}
+            >
+              {savingBonus ? "Saving..." : "Award XP Bonus"}
             </Button>
           </CardContent>
         </Card>

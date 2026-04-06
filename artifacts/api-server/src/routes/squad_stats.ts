@@ -3,6 +3,7 @@ import { eq, sql, and, inArray, desc, sum } from "drizzle-orm";
 import {
   db, playersTable, statsTable, awardsTable, fixturePlayersTable,
   motmVotesTable, fixturesTable, playerRatingsTable, playerValueChangesTable,
+  playerXpBonusesTable,
 } from "@workspace/db";
 import { calculateXp, isGkOrDef } from "../lib/xp";
 import { computeAchievements, computeComplexAchievements, totalAchievementXp, type PlayerMatchForAchievements } from "../lib/achievements";
@@ -211,6 +212,11 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     .innerJoin(fixturesTable, eq(playerValueChangesTable.fixtureId, fixturesTable.id))
     .orderBy(desc(fixturesTable.matchDate));
 
+  // Manual XP bonuses (all players, not season-filtered)
+  const allXpBonuses = await db
+    .select({ playerId: playerXpBonusesTable.playerId, amount: playerXpBonusesTable.amount })
+    .from(playerXpBonusesTable);
+
   // Determine the current muppet: player who received the most recent "motm" award
   const [latestMuppet] = await db
     .select({ playerId: awardsTable.playerId })
@@ -280,7 +286,8 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       emergencyGkCount: emergencyGk,
     });
     const achXp = totalAchievementXp(playerAchievements);
-    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, position, achievementXp: achXp });
+    const manualXpBonus = allXpBonuses.filter(b => b.playerId === p.id).reduce((s, b) => s + b.amount, 0);
+    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, position, achievementXp: achXp + manualXpBonus });
 
     return {
       playerId: p.id,

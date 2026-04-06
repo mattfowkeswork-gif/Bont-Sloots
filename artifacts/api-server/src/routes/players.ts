@@ -8,7 +8,7 @@ import {
   totalAchievementXp,
   type PlayerMatchForAchievements,
 } from "../lib/achievements";
-import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable, playerValueChangesTable } from "@workspace/db";
+import { db, playersTable, statsTable, awardsTable, fixturesTable, fixturePlayersTable, motmVotesTable, playerCommentsTable, playerRatingsTable, playerValueChangesTable, playerXpBonusesTable } from "@workspace/db";
 import {
   CreatePlayerBody,
   GetPlayerParams,
@@ -246,6 +246,14 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .limit(1);
   const isMuppet = latestMuppet?.playerId === player.id;
 
+  // Manual XP bonuses
+  const xpBonuses = await db
+    .select()
+    .from(playerXpBonusesTable)
+    .where(eq(playerXpBonusesTable.playerId, player.id))
+    .orderBy(desc(playerXpBonusesTable.createdAt));
+  const manualXpBonus = xpBonuses.reduce((sum, b) => sum + b.amount, 0);
+
   // Compute achievements (two-pass: base level first, then with achievement XP)
   const position = player.position ?? null;
   const csMultiplier = isGkOrDef(position) ? 1 : 0.25;
@@ -266,7 +274,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
 
   const xp = calculateXp({
     apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets,
-    momAwards: momCount, muppetAwards: motmCount, position, achievementXp: achXp,
+    momAwards: momCount, muppetAwards: motmCount, position, achievementXp: achXp + manualXpBonus,
   });
 
   res.json({
@@ -296,6 +304,8 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     xpForNextLevel: xp.xpForNextLevel,
     xpBreakdown: xp.xpBreakdown,
     achievementXp: achXp,
+    manualXpBonus,
+    xpBonuses,
     achievements,
     awardHistory: playerAwards.map(a => ({
       id: a.id,

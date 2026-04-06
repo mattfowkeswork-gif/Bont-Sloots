@@ -416,6 +416,23 @@ export function PlayerProfile() {
         </div>
       )}
 
+      {/* Special Commendations */}
+      {(player as any).xpBonuses && (player as any).xpBonuses.length > 0 && (
+        <div className="bg-card border border-yellow-500/20 rounded-xl p-5">
+          <div className="text-xs uppercase tracking-wider text-yellow-400 font-bold mb-3 flex items-center gap-2">
+            ⭐ Special Commendations
+          </div>
+          <div className="space-y-2">
+            {(player as any).xpBonuses.map((bonus: { id: number; amount: number; reason: string; createdAt: string }) => (
+              <div key={bonus.id} className="flex items-start justify-between gap-3">
+                <p className="text-sm text-muted-foreground leading-snug">{bonus.reason}</p>
+                <span className="text-xs text-yellow-400 font-mono whitespace-nowrap shrink-0">+{bonus.amount} XP</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Scouting Profile */}
       {player.scoutingProfile && (
         <div className="bg-card border border-primary/20 rounded-xl p-4">
