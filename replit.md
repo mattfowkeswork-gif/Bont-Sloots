@@ -26,7 +26,7 @@ Mobile-optimized Progressive Web App (PWA) for Bont Sloots FC (Real Sosobad), a 
 4. **Squad Stats Leaderboard** — Sortable table: Name, Apps, Goals, Assists, MOTM Votes, Muppet Awards, Market Value. Season filter dropdown. Market Value formula: £5M base + £100k/App + £500k/(Goal+Assist+MOTM) - £1M/Muppet.
 5. **Squad** — FIFA-style player cards: position badge (GK/DEF/MID/FWD), market value (colour-coded), stats row (Goals/Apps/MOTM), mini SVG sparkline (recent form trend), milestone badges (5 goals / 5 apps / 3 MOTMs). Shows player photo in circle if uploaded, or initials fallback. Muppet of the Match player card shows grayscale filter + 🤡 indicator.
 6. **Player Profiles** — Stats (Apps/Goals/Assists/Fan MOTMs), market value + trend arrow, scouting report, teammate comments ("What the Lads Say"), award history. Shows large player photo at top. Muppet banner + grayscale filter applied automatically.
-7. **Player Photos** — Mobile-friendly upload via Admin Panel → Edit Player. Images are auto-cropped/resized to 500×500px square on the server using sharp. Stored in object storage (GCS). Default jersey silhouette shown when no photo uploaded.
+7. **Player Photos** — Mobile-friendly upload via Admin Panel → Edit Player. Images are auto-cropped/resized to 500×500px square on the server using sharp. Stored as base64 JPEG data URLs directly in the `photo_url` database column (bypasses object storage, which had GCS auth issues). Default jersey silhouette shown when no photo uploaded.
 8. **Admin Panel** — Hidden password-protected area (triple-click team badge to reveal). Default password: `bont2025`.
    - **Fixtures** — Manage fixtures, mark played, set scores
    - **Import** — Bulk import fixtures from plain text

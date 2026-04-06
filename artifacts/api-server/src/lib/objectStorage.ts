@@ -204,6 +204,28 @@ export class ObjectStorageService {
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
   }
+
+  async getSignedUploadUrl(gcsFullPath: string, ttlSec: number = 900): Promise<string> {
+    const { bucketName, objectName } = parseObjectPath(gcsFullPath);
+    return signObjectURL({ bucketName, objectName, method: "PUT", ttlSec });
+  }
+
+  async getSignedDownloadUrl(gcsFullPath: string, ttlSec: number = 3600): Promise<string> {
+    const { bucketName, objectName } = parseObjectPath(gcsFullPath);
+    return signObjectURL({ bucketName, objectName, method: "GET", ttlSec });
+  }
+
+  buildGcsPath(entityRelativePath: string): string {
+    let privateDir = this.getPrivateObjectDir();
+    if (!privateDir.endsWith("/")) privateDir = `${privateDir}/`;
+    return `${privateDir}${entityRelativePath}`;
+  }
+
+  entityPathToGcsPath(objectPath: string): string {
+    if (!objectPath.startsWith("/objects/")) throw new ObjectNotFoundError();
+    const entityId = objectPath.slice("/objects/".length);
+    return this.buildGcsPath(entityId);
+  }
 }
 
 function parseObjectPath(path: string): {
