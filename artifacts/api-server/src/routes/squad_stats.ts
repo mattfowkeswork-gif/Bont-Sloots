@@ -273,7 +273,8 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
 
     const position = p.position ?? null;
     const csMultiplier = isGkOrDef(position) ? 1 : 0.25;
-    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, position });
+    const manualXpBonus = allXpBonuses.filter(b => b.playerId === p.id).reduce((s, b) => s + b.amount, 0);
+    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, position, achievementXp: manualXpBonus });
     const complex = computeComplexAchievements(matchDataForAch);
     const playerAchievements = computeAchievements({
       apps, goals, assists, cleanSheets, momAwards, muppetAwards,
@@ -286,7 +287,6 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       emergencyGkCount: emergencyGk,
     });
     const achXp = totalAchievementXp(playerAchievements);
-    const manualXpBonus = allXpBonuses.filter(b => b.playerId === p.id).reduce((s, b) => s + b.amount, 0);
     const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, position, achievementXp: achXp + manualXpBonus });
 
     return {

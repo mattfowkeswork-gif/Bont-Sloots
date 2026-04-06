@@ -96,7 +96,8 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
       hasMomAward: momAwardFids.has(app.fixtureId),
       hasMuppetAward: muppetAwardFids.has(app.fixtureId),
     }));
-    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position });
+    const manualXpBonus = allXpBonuses.filter(b => b.playerId === p.id).reduce((s, b) => s + b.amount, 0);
+    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position, achievementXp: manualXpBonus });
     const achievements = computeAchievements({
       apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount,
       baseLevel: baseXp.level,
@@ -107,7 +108,6 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
       cleanSheetXpMultiplier: 1,
     });
     const achXp = totalAchievementXp(achievements);
-    const manualXpBonus = allXpBonuses.filter(b => b.playerId === p.id).reduce((s, b) => s + b.amount, 0);
     const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position, achievementXp: achXp + manualXpBonus });
     const displayName = p.displayName ?? p.name;
     return {

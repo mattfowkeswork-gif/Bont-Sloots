@@ -257,7 +257,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   // Compute achievements (two-pass: base level first, then with achievement XP)
   const position = player.position ?? null;
   const csMultiplier = isGkOrDef(position) ? 1 : 0.25;
-  const baseXp = calculateXp({ apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets, momAwards: momCount, muppetAwards: motmCount, position });
+  const baseXp = calculateXp({ apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets, momAwards: momCount, muppetAwards: motmCount, position, achievementXp: manualXpBonus });
   const complex = computeComplexAchievements(matchDataForAchievements);
   const achievements = computeAchievements({
     apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets,
