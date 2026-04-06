@@ -2,10 +2,17 @@ export const XP_VALUES = {
   appearance: 100,
   goal: 50,
   assist: 50,
-  cleanSheet: 50,
+  cleanSheetDefGk: 50,
+  cleanSheetMidFwd: 10,
   mom: 200,
   muppet: -100,
 };
+
+/** Returns true for GK and DEF positions. Unlabelled players default to true (safe/higher rate). */
+export function isGkOrDef(position?: string | null): boolean {
+  if (!position) return true;
+  return position === "GK" || position === "DEF";
+}
 
 export interface PlayerXpInput {
   apps: number;
@@ -14,6 +21,7 @@ export interface PlayerXpInput {
   cleanSheets: number;
   momAwards: number;
   muppetAwards: number;
+  position?: string | null;
   achievementXp?: number;
 }
 
@@ -73,11 +81,15 @@ export function calculateLevel(progressionXp: number): number {
 }
 
 export function calculateXp(input: PlayerXpInput): PlayerXpResult {
+  const csRate = isGkOrDef(input.position)
+    ? XP_VALUES.cleanSheetDefGk
+    : XP_VALUES.cleanSheetMidFwd;
+
   const xpBreakdown = {
     appearances: input.apps * XP_VALUES.appearance,
     goals: input.goals * XP_VALUES.goal,
     assists: input.assists * XP_VALUES.assist,
-    cleanSheets: input.cleanSheets * XP_VALUES.cleanSheet,
+    cleanSheets: input.cleanSheets * csRate,
     mom: input.momAwards * XP_VALUES.mom,
     muppet: input.muppetAwards * XP_VALUES.muppet,
   };
@@ -94,7 +106,6 @@ export function calculateXp(input: PlayerXpInput): PlayerXpResult {
   const totalXp = progressionXp + xpBreakdown.muppet;
 
   const level = calculateLevel(progressionXp);
-  // level starts at 1 with 0 XP; xpToReachLevel(level-1) gives the XP threshold for the current level
   const xpAtCurrentLevel = xpToReachLevel(level - 1);
   const xpIntoLevel = progressionXp - xpAtCurrentLevel;
   const xpForNextLevel = xpRequiredForLevel(level + 1);

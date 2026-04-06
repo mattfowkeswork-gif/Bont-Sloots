@@ -4,7 +4,7 @@ import {
   db, playersTable, statsTable, awardsTable, fixturePlayersTable,
   motmVotesTable, fixturesTable, playerRatingsTable, playerValueChangesTable,
 } from "@workspace/db";
-import { calculateXp } from "../lib/xp";
+import { calculateXp, isGkOrDef } from "../lib/xp";
 import { computeAchievements, computeComplexAchievements, totalAchievementXp, type PlayerMatchForAchievements } from "../lib/achievements";
 
 const router: IRouter = Router();
@@ -253,7 +253,9 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       hasMuppetAward: muppetAwardFids.has(app.fixtureId),
     }));
 
-    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards });
+    const position = p.position ?? null;
+    const csMultiplier = isGkOrDef(position) ? 1 : 0.25;
+    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, position });
     const complex = computeComplexAchievements(matchDataForAch);
     const playerAchievements = computeAchievements({
       apps, goals, assists, cleanSheets, momAwards, muppetAwards,
@@ -262,9 +264,10 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
       isPhoenix: complex.isPhoenix,
       isJoker: complex.isJoker,
       isGhost: complex.isGhost,
+      cleanSheetXpMultiplier: csMultiplier,
     });
     const achXp = totalAchievementXp(playerAchievements);
-    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, achievementXp: achXp });
+    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards, muppetAwards, position, achievementXp: achXp });
 
     return {
       playerId: p.id,

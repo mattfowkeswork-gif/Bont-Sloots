@@ -368,6 +368,10 @@ export function PlayerProfile() {
             <div className={`text-4xl font-black ${color}`}>{value}</div>
           </div>
         ))}
+        <div className="col-span-2 bg-card border border-emerald-500/20 rounded-xl p-4 text-center">
+          <div className="text-sm text-muted-foreground uppercase tracking-wider mb-1">Clean Sheets</div>
+          <div className="text-4xl font-black text-emerald-400">{player.totalCleanSheets}</div>
+        </div>
         {(player as any).avgRating !== null && (player as any).avgRating !== undefined && (
           <div className="col-span-2 bg-card border border-yellow-500/20 rounded-xl p-4 text-center">
             <div className="text-sm text-muted-foreground uppercase tracking-wider mb-1">Avg Match Rating</div>

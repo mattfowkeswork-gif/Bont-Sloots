@@ -125,6 +125,8 @@ export function computeComplexAchievements(
   return { hatTrickCount, isPhoenix, isJoker, isGhost };
 }
 
+const CLEAN_SHEET_ACHIEVEMENT_IDS = new Set(["solid", "lockdown", "great_wall"]);
+
 export interface AchievementInput {
   apps: number;
   goals: number;
@@ -137,6 +139,8 @@ export interface AchievementInput {
   isPhoenix: boolean;
   isJoker: boolean;
   isGhost: boolean;
+  /** 1.0 for GK/DEF, 0.25 for MID/FWD. Defaults to 1.0. */
+  cleanSheetXpMultiplier?: number;
 }
 
 const NON_META_IDS = ACHIEVEMENT_DEFS.filter(d => d.tier !== "meta").map(d => d.id);
@@ -199,7 +203,14 @@ export function computeAchievements(input: AchievementInput): EarnedAchievement[
   if (nonMetaEarnedCount >= 15)                          earned.add("the_collector");
   if (nonMetaEarnedCount >= 25)                          earned.add("bont_sloots_elite");
 
-  return ACHIEVEMENT_DEFS.map(def => ({ ...def, earned: earned.has(def.id) }));
+  const csMultiplier = input.cleanSheetXpMultiplier ?? 1;
+
+  return ACHIEVEMENT_DEFS.map(def => {
+    const scaledXp = CLEAN_SHEET_ACHIEVEMENT_IDS.has(def.id)
+      ? Math.round(def.xp * csMultiplier)
+      : def.xp;
+    return { ...def, xp: scaledXp, earned: earned.has(def.id) };
+  });
 }
 
 export function totalAchievementXp(achievements: EarnedAchievement[]): number {

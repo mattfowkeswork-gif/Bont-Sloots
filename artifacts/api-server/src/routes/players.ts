@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and } from "drizzle-orm";
-import { calculateXp } from "../lib/xp";
+import { calculateXp, isGkOrDef } from "../lib/xp";
 import {
   computeAchievements,
   computeComplexAchievements,
@@ -231,7 +231,9 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   const isMuppet = latestMuppet?.playerId === player.id;
 
   // Compute achievements (two-pass: base level first, then with achievement XP)
-  const baseXp = calculateXp({ apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets, momAwards: momCount, muppetAwards: motmCount });
+  const position = player.position ?? null;
+  const csMultiplier = isGkOrDef(position) ? 1 : 0.25;
+  const baseXp = calculateXp({ apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets, momAwards: momCount, muppetAwards: motmCount, position });
   const complex = computeComplexAchievements(matchDataForAchievements);
   const achievements = computeAchievements({
     apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets,
@@ -241,12 +243,13 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     isPhoenix: complex.isPhoenix,
     isJoker: complex.isJoker,
     isGhost: complex.isGhost,
+    cleanSheetXpMultiplier: csMultiplier,
   });
   const achXp = totalAchievementXp(achievements);
 
   const xp = calculateXp({
     apps, goals: totalGoals, assists: totalAssists, cleanSheets: totalCleanSheets,
-    momAwards: momCount, muppetAwards: motmCount, achievementXp: achXp,
+    momAwards: momCount, muppetAwards: motmCount, position, achievementXp: achXp,
   });
 
   res.json({

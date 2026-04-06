@@ -4,11 +4,8 @@ import {
   awardsTable, motmVotesTable, playersTable, playerValueChangesTable,
 } from "@workspace/db";
 
-// GK/DEF players by name — overrides DB positions
-const DEF_PLAYER_NAMES = new Set(["Curls", "Chris", "Tommy", "Smudge", "Turner"]);
-
-function isDef(name: string): boolean {
-  return DEF_PLAYER_NAMES.has(name);
+function isDefOrGk(position: string | null | undefined): boolean {
+  return position === "GK" || position === "DEF";
 }
 
 function getRatingBonus(rating: number | null): { amount: number; label: string } | null {
@@ -43,7 +40,7 @@ export async function recalculateFixtureValues(fixtureId?: number): Promise<void
 
     // Players present
     const presence = await db
-      .select({ playerId: fixturePlayersTable.playerId, name: playersTable.name })
+      .select({ playerId: fixturePlayersTable.playerId, name: playersTable.name, position: playersTable.position })
       .from(fixturePlayersTable)
       .innerJoin(playersTable, eq(fixturePlayersTable.playerId, playersTable.id))
       .where(and(eq(fixturePlayersTable.fixtureId, fid), eq(fixturePlayersTable.present, true)));
@@ -103,7 +100,7 @@ export async function recalculateFixtureValues(fixtureId?: number): Promise<void
       const breakdown: { label: string; amount: number }[] = [];
       let total = 0;
 
-      const def = isDef(player.name);
+      const def = isDefOrGk(player.position);
       const goals = statsRows.filter(s => s.playerId === player.playerId && s.type === "goal").length;
       const assists = statsRows.filter(s => s.playerId === player.playerId && s.type === "assist").length;
       const ratingRow = ratingRows.find(r => r.playerId === player.playerId);
@@ -143,11 +140,14 @@ export async function recalculateFixtureValues(fixtureId?: number): Promise<void
         total += bonus;
       }
 
-      // 4. Defensive tier
+      // 4. Defensive tier (GK/DEF full bonus; MID/FWD get smaller clean sheet reward only)
       if (def) {
         const { amount, label } = getDefBonus(goalsConceded);
         breakdown.push({ label, amount });
         total += amount;
+      } else if (goalsConceded === 0) {
+        breakdown.push({ label: "Clean Sheet Bonus (MID/FWD)", amount: 250_000 });
+        total += 250_000;
       }
 
       // 5. Team disaster (all players, 6+ conceded)
