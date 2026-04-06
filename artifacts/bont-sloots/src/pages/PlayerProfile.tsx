@@ -48,7 +48,9 @@ function XpProgressBar({ xpIntoLevel, xpForNextLevel, level }: { xpIntoLevel: nu
   );
 }
 
-type AchievementTier = "basic" | "grinder" | "elite" | "legendary" | "secret";
+type AchievementTier = "basic" | "grinder" | "milestone" | "elite" | "legendary" | "meta" | "secret";
+type AchievementVariant = "bronze" | "silver" | "gold" | "diamond";
+type AchievementGroup = "appearances" | "goals" | "assists" | "clean_sheets";
 
 interface Achievement {
   id: string;
@@ -58,38 +60,75 @@ interface Achievement {
   tier: AchievementTier;
   xp: number;
   secret?: boolean;
+  variant?: AchievementVariant;
+  group?: AchievementGroup;
   earned: boolean;
 }
 
 const TIER_LABELS: Record<AchievementTier, string> = {
   basic: "Basics",
   grinder: "The Grinders",
+  milestone: "Career Milestones",
   elite: "Elite",
   legendary: "Legendary",
+  meta: "The Completionist",
   secret: "Secrets",
 };
 
-const TIER_ORDER: AchievementTier[] = ["basic", "grinder", "elite", "legendary", "secret"];
+const TIER_COLORS: Record<AchievementTier, string> = {
+  basic: "text-muted-foreground",
+  grinder: "text-blue-400",
+  milestone: "text-orange-400",
+  elite: "text-purple-400",
+  legendary: "text-yellow-400",
+  meta: "text-cyan-400",
+  secret: "text-pink-400",
+};
+
+const MILESTONE_GROUP_LABELS: Record<AchievementGroup, string> = {
+  appearances: "Appearances",
+  goals: "Goals",
+  assists: "Assists",
+  clean_sheets: "Clean Sheets",
+};
+
+const TIER_ORDER: AchievementTier[] = ["basic", "grinder", "milestone", "elite", "legendary", "meta", "secret"];
+
+const VARIANT_STYLES: Record<AchievementVariant, { border: string; bg: string; text: string; shadow?: string }> = {
+  bronze:  { border: "border-orange-600/60", bg: "bg-orange-700/15",  text: "text-orange-400" },
+  silver:  { border: "border-slate-400/60",  bg: "bg-slate-400/10",   text: "text-slate-300"  },
+  gold:    { border: "border-yellow-500/60", bg: "bg-yellow-500/10",  text: "text-yellow-400", shadow: "shadow-[0_0_8px_1px] shadow-yellow-500/25" },
+  diamond: { border: "border-cyan-400/60",   bg: "bg-cyan-400/10",    text: "text-cyan-300",   shadow: "shadow-[0_0_12px_2px] shadow-cyan-400/30" },
+};
 
 function AchievementBadge({ ach }: { ach: Achievement }) {
   const [showTip, setShowTip] = useState(false);
   const isSecretLocked = ach.secret && !ach.earned;
   const isLegendary = ach.tier === "legendary";
+  const variantStyle = ach.variant ? VARIANT_STYLES[ach.variant] : null;
 
-  let containerClass = "relative flex flex-col items-center gap-1 cursor-pointer select-none";
   let iconClass = "text-2xl w-12 h-12 flex items-center justify-center rounded-xl border-2 transition-all";
+  let labelColor = "text-muted-foreground";
 
   if (!ach.earned) {
-    iconClass += " opacity-30 grayscale border-border/30 bg-card";
+    iconClass += " opacity-25 grayscale border-border/30 bg-card";
+  } else if (variantStyle) {
+    iconClass += ` ${variantStyle.border} ${variantStyle.bg} ${variantStyle.shadow ?? ""}`;
+    labelColor = variantStyle.text;
   } else if (isLegendary) {
-    iconClass += " border-yellow-500/60 bg-yellow-500/10 shadow-[0_0_12px_2px] shadow-yellow-500/30 ring-1 ring-yellow-400/40";
+    iconClass += " border-yellow-500/60 bg-yellow-500/10 shadow-[0_0_14px_2px] shadow-yellow-500/30 ring-1 ring-yellow-400/40";
+    labelColor = "text-yellow-400";
+  } else if (ach.tier === "meta") {
+    iconClass += " border-cyan-400/40 bg-cyan-400/10";
+    labelColor = "text-cyan-300";
   } else {
     iconClass += " border-primary/30 bg-primary/10";
+    labelColor = "text-white";
   }
 
   return (
     <div
-      className={containerClass}
+      className="relative flex flex-col items-center gap-1 cursor-pointer select-none"
       onClick={() => setShowTip(s => !s)}
       onMouseEnter={() => setShowTip(true)}
       onMouseLeave={() => setShowTip(false)}
@@ -97,7 +136,7 @@ function AchievementBadge({ ach }: { ach: Achievement }) {
       <div className={iconClass}>
         {isSecretLocked ? "❓" : ach.icon}
       </div>
-      <span className={`text-[9px] font-bold text-center leading-tight max-w-[56px] ${ach.earned ? (isLegendary ? "text-yellow-400" : "text-white") : "text-muted-foreground"}`}>
+      <span className={`text-[9px] font-bold text-center leading-tight max-w-[56px] ${ach.earned ? labelColor : "text-muted-foreground"}`}>
         {isSecretLocked ? "???" : ach.name}
       </span>
       {ach.earned && (
@@ -122,12 +161,30 @@ function AchievementBadge({ ach }: { ach: Achievement }) {
   );
 }
 
+const MILESTONE_GROUP_ORDER: AchievementGroup[] = ["appearances", "goals", "assists", "clean_sheets"];
+
+function MilestoneSection({ items }: { items: Achievement[] }) {
+  return (
+    <div className="space-y-3">
+      {MILESTONE_GROUP_ORDER.map(group => {
+        const groupItems = items.filter(a => a.group === group);
+        if (groupItems.length === 0) return null;
+        return (
+          <div key={group}>
+            <p className="text-[9px] uppercase tracking-widest text-orange-400/60 font-bold mb-2">
+              {MILESTONE_GROUP_LABELS[group]}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {groupItems.map(ach => <AchievementBadge key={ach.id} ach={ach} />)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function TrophyRoom({ achievements }: { achievements: Achievement[] }) {
-  const byTier = TIER_ORDER.map(tier => ({
-    tier,
-    label: TIER_LABELS[tier],
-    items: achievements.filter(a => a.tier === tier),
-  }));
   const totalEarned = achievements.filter(a => a.earned).length;
 
   return (
@@ -139,23 +196,24 @@ function TrophyRoom({ achievements }: { achievements: Achievement[] }) {
         </div>
         <span className="text-xs text-muted-foreground">{totalEarned} / {achievements.length} unlocked</span>
       </div>
-      {byTier.map(({ tier, label, items }) => (
-        <div key={tier}>
-          <p className={`text-[10px] uppercase tracking-widest font-bold mb-3 ${
-            tier === "legendary" ? "text-yellow-400" :
-            tier === "elite" ? "text-purple-400" :
-            tier === "secret" ? "text-pink-400" :
-            "text-muted-foreground"
-          }`}>
-            {label}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {items.map(ach => (
-              <AchievementBadge key={ach.id} ach={ach} />
-            ))}
+      {TIER_ORDER.map(tier => {
+        const items = achievements.filter(a => a.tier === tier);
+        if (items.length === 0) return null;
+        return (
+          <div key={tier}>
+            <p className={`text-[10px] uppercase tracking-widest font-bold mb-3 ${TIER_COLORS[tier]}`}>
+              {TIER_LABELS[tier]}
+            </p>
+            {tier === "milestone" ? (
+              <MilestoneSection items={items} />
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {items.map(ach => <AchievementBadge key={ach.id} ach={ach} />)}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
