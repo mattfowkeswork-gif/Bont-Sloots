@@ -1,7 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { z } from "zod";
-import { ObjectStorageService } from "../lib/objectStorage";
+import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { ObjectPermission } from "../lib/objectAcl";
 
 const RequestUploadUrlBody = z.object({
   name: z.string(),
@@ -93,41 +94,48 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
  * GET /storage/objects/*
  *
  * Serve object entities from PRIVATE_OBJECT_DIR.
- * Uses signed download URLs to avoid GCS SDK credential issues.
+ * These are served from a separate path from /public-objects and can optionally
+ * be protected with authentication or ACL checks based on the use case.
  */
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
+    const objectPath = `/objects/${wildcardPath}`;
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
-    const gcsPath = objectStorageService.buildGcsPath(wildcardPath);
-    const signedUrl = await objectStorageService.getSignedDownloadUrl(gcsPath);
+    // --- Protected route example (uncomment when using replit-auth) ---
+    // if (!req.isAuthenticated()) {
+    //   res.status(401).json({ error: "Unauthorized" });
+    //   return;
+    // }
+    // const canAccess = await objectStorageService.canAccessObjectEntity({
+    //   userId: req.user.id,
+    //   objectFile,
+    //   requestedPermission: ObjectPermission.READ,
+    // });
+    // if (!canAccess) {
+    //   res.status(403).json({ error: "Forbidden" });
+    //   return;
+    // }
 
-    const gcsResponse = await fetch(signedUrl, {
-      signal: AbortSignal.timeout(30_000),
-    });
+    const response = await objectStorageService.downloadObject(objectFile);
 
-    if (!gcsResponse.ok) {
-      if (gcsResponse.status === 404 || gcsResponse.status === 403) {
-        res.status(404).json({ error: "Object not found" });
-        return;
-      }
-      throw new Error(`GCS responded with status ${gcsResponse.status}`);
-    }
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
 
-    const contentType = gcsResponse.headers.get("content-type") || "application/octet-stream";
-    const contentLength = gcsResponse.headers.get("content-length");
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Cache-Control", "public, max-age=31536000");
-    if (contentLength) res.setHeader("Content-Length", contentLength);
-
-    if (gcsResponse.body) {
-      const nodeStream = Readable.fromWeb(gcsResponse.body as ReadableStream<Uint8Array>);
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
       nodeStream.pipe(res);
     } else {
       res.end();
     }
   } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      req.log.warn({ err: error }, "Object not found");
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
     req.log.error({ err: error }, "Error serving object");
     res.status(500).json({ error: "Failed to serve object" });
   }
