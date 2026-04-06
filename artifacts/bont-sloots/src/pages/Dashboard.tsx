@@ -2,7 +2,7 @@ import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle, ThumbsUp, TrendingUp, ExternalLink, Search } from "lucide-react";
+import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle, ThumbsUp, TrendingUp, ExternalLink, Search, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, differenceInSeconds } from "date-fns";
@@ -416,17 +416,17 @@ export function Dashboard() {
 
         <Card className="bg-card border-border/50 relative overflow-hidden">
           <div className="absolute -right-4 -bottom-4 opacity-5">
-            <Trophy className="w-24 h-24" />
+            <Zap className="w-24 h-24" />
           </div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground font-normal">Top Scorer</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground font-normal">Highest Level</CardTitle>
           </CardHeader>
           <CardContent>
-            {dashboard.topScorer ? (
+            {(dashboard as any).topLevel ? (
               <>
-                <div className="text-xl font-bold text-white truncate">{dashboard.topScorer.playerName}</div>
+                <div className="text-xl font-bold text-white truncate">{(dashboard as any).topLevel.playerName}</div>
                 <div className="text-2xl font-black text-primary mt-1">
-                  {dashboard.topScorer.totalGoals} <span className="text-sm font-normal text-muted-foreground">goals</span>
+                  Lvl {(dashboard as any).topLevel.level} <span className="text-sm font-normal text-muted-foreground">{(dashboard as any).topLevel.totalXp} XP</span>
                 </div>
               </>
             ) : (

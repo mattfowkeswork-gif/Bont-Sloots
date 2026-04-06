@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
-import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable, playerValueChangesTable } from "@workspace/db";
+import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable, playerValueChangesTable, fixturePlayersTable } from "@workspace/db";
+import { calculateXp } from "../lib/xp";
 
 const router: IRouter = Router();
 
@@ -41,46 +42,49 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
 
   const players = await db.select().from(playersTable).orderBy(playersTable.name);
 
-  const goalCounts = await db
-    .select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
-    .from(statsTable)
-    .where(eq(statsTable.type, "goal"))
-    .groupBy(statsTable.playerId);
+  const [goalCounts, assistCounts, momCounts, motmCounts, fanMotmCounts, appsCounts, cleanSheetCounts] = await Promise.all([
+    db.select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
+      .from(statsTable).where(eq(statsTable.type, "goal")).groupBy(statsTable.playerId),
+    db.select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
+      .from(statsTable).where(eq(statsTable.type, "assist")).groupBy(statsTable.playerId),
+    db.select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
+      .from(awardsTable).where(eq(awardsTable.type, "mom")).groupBy(awardsTable.playerId),
+    db.select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
+      .from(awardsTable).where(eq(awardsTable.type, "motm")).groupBy(awardsTable.playerId),
+    db.select({ playerId: motmVotesTable.playerId, count: sql<number>`count(*)::int` })
+      .from(motmVotesTable).groupBy(motmVotesTable.playerId),
+    db.select({ playerId: fixturePlayersTable.playerId, count: sql<number>`count(*)::int` })
+      .from(fixturePlayersTable).where(eq(fixturePlayersTable.present, true)).groupBy(fixturePlayersTable.playerId),
+    db.select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
+      .from(statsTable).where(eq(statsTable.type, "clean_sheet")).groupBy(statsTable.playerId),
+  ]);
 
-  const assistCounts = await db
-    .select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
-    .from(statsTable)
-    .where(eq(statsTable.type, "assist"))
-    .groupBy(statsTable.playerId);
-
-  const momCounts = await db
-    .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
-    .from(awardsTable)
-    .where(eq(awardsTable.type, "mom"))
-    .groupBy(awardsTable.playerId);
-
-  const motmCounts = await db
-    .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
-    .from(awardsTable)
-    .where(eq(awardsTable.type, "motm"))
-    .groupBy(awardsTable.playerId);
-
-  const fanMotmCounts = await db
-    .select({ playerId: motmVotesTable.playerId, count: sql<number>`count(*)::int` })
-    .from(motmVotesTable)
-    .groupBy(motmVotesTable.playerId);
-
-  const playerStats = players.map(p => ({
-    playerId: p.id,
-    playerName: p.name,
-    totalGoals: goalCounts.find(g => g.playerId === p.id)?.count ?? 0,
-    totalAssists: assistCounts.find(a => a.playerId === p.id)?.count ?? 0,
-    momCount: momCounts.find(m => m.playerId === p.id)?.count ?? 0,
-    motmCount: motmCounts.find(m => m.playerId === p.id)?.count ?? 0,
-    fanMotm: fanMotmCounts.find(m => m.playerId === p.id)?.count ?? 0,
-  }));
+  const playerStats = players.map(p => {
+    const goals = goalCounts.find(g => g.playerId === p.id)?.count ?? 0;
+    const assists = assistCounts.find(a => a.playerId === p.id)?.count ?? 0;
+    const momCount = momCounts.find(m => m.playerId === p.id)?.count ?? 0;
+    const motmCount = motmCounts.find(m => m.playerId === p.id)?.count ?? 0;
+    const fanMotm = fanMotmCounts.find(m => m.playerId === p.id)?.count ?? 0;
+    const apps = appsCounts.find(a => a.playerId === p.id)?.count ?? 0;
+    const cleanSheets = cleanSheetCounts.find(c => c.playerId === p.id)?.count ?? 0;
+    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position });
+    const displayName = p.displayName ?? p.name;
+    return {
+      playerId: p.id,
+      playerName: displayName,
+      totalGoals: goals,
+      totalAssists: assists,
+      momCount,
+      motmCount,
+      fanMotm,
+      totalXp: xp.totalXp,
+      progressionXp: xp.progressionXp,
+      level: xp.level,
+    };
+  });
 
   const topScorer = [...playerStats].sort((a, b) => b.totalGoals - a.totalGoals)[0] ?? null;
+  const topLevel = [...playerStats].sort((a, b) => b.progressionXp - a.progressionXp)[0] ?? null;
 
   // Hall of Fame
   const mostMotmsPlayer = [...playerStats].sort((a, b) => b.fanMotm - a.fanMotm)[0] ?? null;
@@ -139,6 +143,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     totalSquadValue,
     seasonRecord: { played: playedFixtures.length, wins, draws, losses, goalsFor, goalsAgainst },
     topScorer: topScorer && topScorer.totalGoals > 0 ? topScorer : null,
+    topLevel: topLevel ? { playerId: topLevel.playerId, playerName: topLevel.playerName, level: topLevel.level, totalXp: topLevel.totalXp } : null,
     recentResults: recentResults.map(serializeFixture),
     hallOfFame,
     squadPhotoUrl,
