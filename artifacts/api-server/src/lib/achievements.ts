@@ -23,7 +23,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   { id: "first_blood",      name: "Sloots Debut",           description: "Make your first appearance",                          icon: "🔥", tier: "basic",     xp: 100  },
   { id: "the_playmaker",    name: "The Playmaker",          description: "Register your 1st career assist",                    icon: "🅰️", tier: "basic",     xp: 100  },
   { id: "safe_hands",       name: "Safe Hands",             description: "Keep your 1st career clean sheet",                   icon: "🧤", tier: "basic",     xp: 100  },
-  { id: "match_fit",        name: "Match Fit",              description: "Make 5 total career appearances",                    icon: "🏃", tier: "basic",     xp: 250  },
+  { id: "match_fit",        name: "Match Fit",              description: "Make 5 total career appearances",                    icon: "🏃", tier: "milestone", xp: 250, group: "appearances" },
   { id: "off_the_mark",     name: "Off the Mark",           description: "Score your 1st career goal",                         icon: "🎯", tier: "basic",     xp: 150  },
 
   // ── Tier 2: Grinders ────────────────────────────────────────────────────────
