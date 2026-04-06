@@ -47,6 +47,8 @@ export async function recalculateFixtureValues(fixtureId?: number): Promise<void
 
     if (presence.length === 0) continue;
 
+    const allPlayers = await db.select().from(playersTable);
+
     const playerIds = presence.map(p => p.playerId);
 
     // Goals & assists per player
@@ -96,9 +98,32 @@ export async function recalculateFixtureValues(fixtureId?: number): Promise<void
     }
 
     // Calculate per player
-    for (const player of presence) {
+    for (const player of allPlayers) {
       const breakdown: { label: string; amount: number }[] = [];
       let total = 0;
+      const isPresent = presence.some(p => p.playerId === player.id);
+
+      if (!isPresent) {
+        await db
+          .insert(playerValueChangesTable)
+          .values({
+            playerId: player.id,
+            fixtureId: fid,
+            totalChange: 0,
+            breakdown: [],
+            isKing: false,
+          })
+          .onConflictDoUpdate({
+            target: [playerValueChangesTable.playerId, playerValueChangesTable.fixtureId],
+            set: {
+              totalChange: 0,
+              breakdown: [],
+              isKing: false,
+              updatedAt: new Date(),
+            },
+          });
+        continue;
+      }
 
       const def = isDefOrGk(player.position);
       const goals = statsRows.filter(s => s.playerId === player.playerId && s.type === "goal").length;
