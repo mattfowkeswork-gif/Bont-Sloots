@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and } from "drizzle-orm";
 import { calculateXp, isGkOrDef } from "../lib/xp";
+import { recalculateFixtureValues } from "./value_calculator";
 import {
   computeAchievements,
   computeComplexAchievements,
@@ -43,6 +44,7 @@ router.post("/players", async (req, res): Promise<void> => {
     position: parsed.data.position ?? null,
     scoutingProfile: parsed.data.scoutingProfile ?? null,
   }).returning();
+  await recalculateFixtureValues();
   res.status(201).json({
     id: player.id,
     name: player.name,
@@ -320,6 +322,7 @@ router.put("/players/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Player not found" });
     return;
   }
+  await recalculateFixtureValues();
   res.json({
     id: player.id,
     name: player.name,
