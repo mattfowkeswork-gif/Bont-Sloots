@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
-import { db, statsTable, playersTable, awardsTable } from "@workspace/db";
+import { eq, sql, and } from "drizzle-orm";
+import { db, statsTable, playersTable, awardsTable, fixturePlayersTable, fixturesTable } from "@workspace/db";
+import { recalculateFixtureValues } from "./value_calculator";
 import {
   CreateStatBody,
   DeleteStatParams,
@@ -67,11 +68,34 @@ router.post("/stats", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [stat] = await db.insert(statsTable).values({
-    playerId: parsed.data.playerId,
-    fixtureId: parsed.data.fixtureId,
-    type: parsed.data.type,
-  }).returning();
+
+  const { playerId, fixtureId, type } = parsed.data;
+
+  const [stat] = await db.insert(statsTable).values({ playerId, fixtureId, type }).returning();
+
+  // If this fixture is played, ensure the player is marked as present so the
+  // value calculator can include them, then recalculate.
+  const [fixture] = await db.select().from(fixturesTable).where(eq(fixturesTable.id, fixtureId));
+  if (fixture?.played) {
+    const [existing] = await db
+      .select()
+      .from(fixturePlayersTable)
+      .where(and(eq(fixturePlayersTable.fixtureId, fixtureId), eq(fixturePlayersTable.playerId, playerId)));
+
+    if (existing) {
+      if (!existing.present) {
+        await db
+          .update(fixturePlayersTable)
+          .set({ present: true })
+          .where(and(eq(fixturePlayersTable.fixtureId, fixtureId), eq(fixturePlayersTable.playerId, playerId)));
+      }
+    } else {
+      await db.insert(fixturePlayersTable).values({ fixtureId, playerId, present: true });
+    }
+
+    await recalculateFixtureValues(fixtureId);
+  }
+
   res.status(201).json({
     id: stat.id,
     playerId: stat.playerId,
@@ -92,6 +116,9 @@ router.delete("/stats/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Stat not found" });
     return;
   }
+
+  await recalculateFixtureValues(stat.fixtureId);
+
   res.sendStatus(204);
 });
 
