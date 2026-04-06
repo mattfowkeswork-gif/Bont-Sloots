@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable, playerValueChangesTable, fixturePlayersTable } from "@workspace/db";
 import { calculateXp } from "../lib/xp";
+import { computeAchievements, computeComplexAchievements, totalAchievementXp, type PlayerMatchForAchievements } from "../lib/achievements";
 
 const router: IRouter = Router();
 
@@ -59,6 +60,17 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
       .from(statsTable).where(eq(statsTable.type, "clean_sheet")).groupBy(statsTable.playerId),
   ]);
 
+  const allAppsWithDates = await db
+    .select({ playerId: fixturePlayersTable.playerId, fixtureId: fixturePlayersTable.fixtureId, matchDate: fixturesTable.matchDate })
+    .from(fixturePlayersTable)
+    .innerJoin(fixturesTable, eq(fixturePlayersTable.fixtureId, fixturesTable.id))
+    .where(eq(fixturePlayersTable.present, true));
+
+  const allAwardsWithDates = await db
+    .select({ playerId: awardsTable.playerId, fixtureId: awardsTable.fixtureId, type: awardsTable.type, matchDate: fixturesTable.matchDate })
+    .from(awardsTable)
+    .innerJoin(fixturesTable, eq(awardsTable.fixtureId, fixturesTable.id));
+
   const playerStats = players.map(p => {
     const goals = goalCounts.find(g => g.playerId === p.id)?.count ?? 0;
     const assists = assistCounts.find(a => a.playerId === p.id)?.count ?? 0;
@@ -67,7 +79,31 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     const fanMotm = fanMotmCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const apps = appsCounts.find(a => a.playerId === p.id)?.count ?? 0;
     const cleanSheets = cleanSheetCounts.find(c => c.playerId === p.id)?.count ?? 0;
-    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position });
+    const playerApps = allAppsWithDates.filter(a => a.playerId === p.id);
+    const playerAwards = allAwardsWithDates.filter(a => a.playerId === p.id);
+    const momAwardFids = new Set(playerAwards.filter(a => a.type === "mom").map(a => a.fixtureId));
+    const muppetAwardFids = new Set(playerAwards.filter(a => a.type === "motm").map(a => a.fixtureId));
+    const matchDataForAchievements: PlayerMatchForAchievements[] = playerApps.map(app => ({
+      fixtureId: app.fixtureId,
+      matchDate: app.matchDate ?? new Date(0),
+      goals,
+      assists,
+      cleanSheets,
+      hasMomAward: momAwardFids.has(app.fixtureId),
+      hasMuppetAward: muppetAwardFids.has(app.fixtureId),
+    }));
+    const baseXp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position });
+    const achievements = computeAchievements({
+      apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount,
+      baseLevel: baseXp.level,
+      hatTrickCount: computeComplexAchievements(matchDataForAchievements).hatTrickCount,
+      isPhoenix: computeComplexAchievements(matchDataForAchievements).isPhoenix,
+      isJoker: computeComplexAchievements(matchDataForAchievements).isJoker,
+      isGhost: computeComplexAchievements(matchDataForAchievements).isGhost,
+      cleanSheetXpMultiplier: 1,
+    });
+    const achXp = totalAchievementXp(achievements);
+    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position, achievementXp: achXp });
     const displayName = p.displayName ?? p.name;
     return {
       playerId: p.id,
