@@ -71,7 +71,7 @@ const TIER_LABELS: Record<AchievementTier, string> = {
   elite: "Elite",
   legendary: "Legendary",
   meta: "The Completionist",
-  secret: "Secrets",
+  secret: "Dark Sloots",
 };
 
 const TIER_COLORS: Record<AchievementTier, string> = {
