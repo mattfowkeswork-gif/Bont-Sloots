@@ -204,22 +204,22 @@ function ScoutReport({ opponent }: { opponent: string }) {
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Scout Report</span>
         </div>
         <p className="text-xs text-muted-foreground">No league data found for this opponent.</p>
-        {(aiLoading || aiData?.summary) && (
-          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <Bot className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="text-[11px] uppercase tracking-widest text-indigo-400/80 font-semibold">AI Scout Analysis</span>
-            </div>
-            {aiLoading ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
-                <span>Generating analysis...</span>
-              </div>
-            ) : (
-              <p className="text-xs text-white/75 leading-relaxed">{aiData!.summary}</p>
-            )}
+        <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Bot className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-[11px] uppercase tracking-widest text-indigo-400/80 font-semibold">AI Scout Analysis</span>
           </div>
-        )}
+          {aiLoading ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+              <span>Generating analysis...</span>
+            </div>
+          ) : aiData?.summary ? (
+            <p className="text-xs text-white/75 leading-relaxed">{aiData.summary}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Analysis unavailable.</p>
+          )}
+        </div>
       </div>
     );
   }
