@@ -44,6 +44,16 @@ router.post("/players", async (req, res): Promise<void> => {
     position: parsed.data.position ?? null,
     scoutingProfile: parsed.data.scoutingProfile ?? null,
   }).returning();
+  await db
+    .insert(playerValueChangesTable)
+    .values({
+      playerId: player.id,
+      fixtureId: 0,
+      totalChange: 0,
+      breakdown: [],
+      isKing: false,
+    })
+    .onConflictDoNothing();
   await recalculateFixtureValues();
   res.status(201).json({
     id: player.id,
@@ -322,6 +332,16 @@ router.put("/players/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Player not found" });
     return;
   }
+  await db
+    .insert(playerValueChangesTable)
+    .values({
+      playerId: player.id,
+      fixtureId: 0,
+      totalChange: 0,
+      breakdown: [],
+      isKing: false,
+    })
+    .onConflictDoNothing();
   await recalculateFixtureValues();
   res.json({
     id: player.id,
