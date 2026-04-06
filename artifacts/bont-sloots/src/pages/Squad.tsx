@@ -2,6 +2,7 @@ import { useGetSquadStats, getGetSquadStatsQueryKey } from "@workspace/api-clien
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, TrendingUp, TrendingDown, Minus, Target, Shield, Star, Crown, Zap } from "lucide-react";
+import { JerseyCircle } from "@/components/JerseyCircle";
 
 const POSITION_COLORS: Record<string, string> = {
   GK: "bg-emerald-700 text-emerald-100",
@@ -13,19 +14,6 @@ const POSITION_COLORS: Record<string, string> = {
 const POSITION_LABEL: Record<string, string> = {
   GK: "GK", DEF: "DEF", MID: "MID", FWD: "FWD",
 };
-
-function getColorFromName(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const h = hash % 360;
-  return `hsl(${h}, 55%, 20%)`;
-}
-
-function getInitials(name: string) {
-  return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-}
 
 function formatValue(v: number) {
   if (v >= 1_000_000) return `£${(v / 1_000_000).toFixed(1)}M`;
@@ -83,47 +71,6 @@ function MilestoneBadges({ goals, apps, motmVotes }: { goals: number; apps: numb
   );
 }
 
-function PlayerAvatar({ photoUrl, playerName, isMuppet, size = "md" }: {
-  photoUrl?: string | null;
-  playerName: string;
-  isMuppet: boolean;
-  size?: "sm" | "md";
-}) {
-  const sizeClass = size === "sm" ? "w-10 h-10 text-sm" : "w-14 h-14 text-lg";
-
-  if (photoUrl) {
-    return (
-      <div className={`${sizeClass} rounded-full border-2 border-primary/30 overflow-hidden mt-6 mb-2 shadow-md shadow-black/50 flex-shrink-0`}>
-        <img
-          src={`/api/storage${photoUrl}`}
-          alt={playerName}
-          className="w-full h-full object-cover"
-          style={isMuppet ? { filter: "grayscale(100%)" } : undefined}
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "/jersey-placeholder.svg";
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`${sizeClass} rounded-full border-2 border-primary/30 flex items-center justify-center mt-6 mb-2 shadow-md shadow-black/50 text-white font-black overflow-hidden`}
-      style={isMuppet
-        ? { filter: "grayscale(100%)", backgroundColor: getColorFromName(playerName) }
-        : { backgroundColor: getColorFromName(playerName) }
-      }
-    >
-      <img
-        src="/jersey-placeholder.svg"
-        alt={playerName}
-        className="w-full h-full object-cover opacity-30 absolute"
-      />
-      <span className="relative z-10">{playerName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}</span>
-    </div>
-  );
-}
 
 export function Squad() {
   const { data: players, isLoading } = useGetSquadStats({
@@ -191,29 +138,13 @@ export function Squad() {
                 )}
 
                 {/* Avatar */}
-                {player.photoUrl ? (
-                  <div className="w-14 h-14 rounded-full border-2 border-primary/30 overflow-hidden mt-6 mb-2 shadow-md shadow-black/50 flex-shrink-0">
-                    <img
-                      src={`/api/storage${player.photoUrl}`}
-                      alt={player.playerName}
-                      className="w-full h-full object-cover"
-                      style={player.isMuppet ? { filter: "grayscale(100%)" } : undefined}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className="w-14 h-14 rounded-full border-2 border-primary/30 flex items-center justify-center mt-6 mb-2 shadow-md shadow-black/50 text-white font-black text-lg"
-                    style={{
-                      backgroundColor: getColorFromName(player.playerName),
-                      filter: player.isMuppet ? "grayscale(100%)" : undefined,
-                    }}
-                  >
-                    {getInitials(player.playerName)}
-                  </div>
-                )}
+                <JerseyCircle
+                  name={player.playerName}
+                  position={player.position}
+                  size="md"
+                  grayscale={player.isMuppet}
+                  className="mt-6 mb-2"
+                />
 
                 {/* Name */}
                 <div className="font-black text-white text-xs leading-tight mb-1 uppercase tracking-wide line-clamp-2">

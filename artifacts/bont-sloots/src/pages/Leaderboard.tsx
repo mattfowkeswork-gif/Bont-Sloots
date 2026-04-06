@@ -4,21 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-
-function getColorFromName(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const h = hash % 360;
-  return `hsl(${h}, 70%, 25%)`;
-}
-
-function getInitials(name: string) {
-  return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-}
+import { JerseyCircle } from "@/components/JerseyCircle";
 
 function formatMarketValue(value: number) {
   if (value >= 1_000_000) return `£${(value / 1_000_000).toFixed(1)}M`;
@@ -134,14 +121,7 @@ export function Leaderboard() {
                   <td className="p-2">
                     <Link href={`/players/${player.playerId}`}>
                       <div className="flex items-center gap-2 hover:text-primary transition-colors">
-                        <Avatar className="h-7 w-7 border border-border flex-shrink-0">
-                          <AvatarFallback
-                            className="text-white font-semibold text-[10px]"
-                            style={{ backgroundColor: getColorFromName(player.playerName) }}
-                          >
-                            {getInitials(player.playerName)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <JerseyCircle name={player.playerName} position={player.position} size="xs" />
                         <span className="font-medium text-white whitespace-nowrap">{player.playerName}</span>
                       </div>
                     </Link>

@@ -6,8 +6,8 @@ import {
 } from "@workspace/api-client-react";
 import { useParams, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trophy, Star, AlertTriangle, ArrowLeft, Calendar, MessageSquare, Target, Shield, TrendingUp, TrendingDown, Minus, Crown, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { JerseyCircle } from "@/components/JerseyCircle";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -297,10 +297,6 @@ export function PlayerProfile() {
     : player.marketValue >= 5_000_000 ? "text-white"
     : "text-red-400";
 
-  const photoSrc = (player as any).photoUrl
-    ? `/api/storage${(player as any).photoUrl}`
-    : "/jersey-placeholder.svg";
-
   const isMuppet = (player as any).isMuppet === true;
 
   return (
@@ -327,18 +323,14 @@ export function PlayerProfile() {
         )}
 
         <div className="relative flex flex-col items-center text-center">
-          {/* Photo */}
-          <div className="h-28 w-28 rounded-full border-4 border-background mb-4 shadow-lg overflow-hidden flex-shrink-0">
-            <img
-              src={photoSrc}
-              alt={player.name}
-              className="w-full h-full object-cover"
-              style={isMuppet ? { filter: "grayscale(100%)" } : undefined}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/jersey-placeholder.svg";
-              }}
-            />
-          </div>
+          {/* Jersey Circle avatar */}
+          <JerseyCircle
+            name={player.name}
+            position={player.position}
+            size="lg"
+            grayscale={isMuppet}
+            className="mb-4"
+          />
 
           <h1 className="text-2xl font-black text-white">{player.name}</h1>
           <div className="text-primary font-medium mt-1">{player.position || "Squad Player"}</div>

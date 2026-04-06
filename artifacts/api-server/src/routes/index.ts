@@ -16,16 +16,14 @@ import fixtureRatingsRouter from "./fixture_ratings";
 import fixtureValuesRouter from "./fixture_values";
 import adminRecalculateRouter from "./admin_recalculate";
 import scoutRouter from "./scout";
-import storageRouter from "./storage";
-import playerPhotosRouter from "./player_photos";
 import matchReportsRouter from "./match_reports";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(playerCommentsRouter);
 router.use(playersRouter);
-router.use(playerPhotosRouter);
 router.use(fixturesRouter);
 router.use(statsRouter);
 router.use(awardsRouter);
@@ -40,7 +38,7 @@ router.use(fixtureRatingsRouter);
 router.use(fixtureValuesRouter);
 router.use(adminRecalculateRouter);
 router.use(scoutRouter);
-router.use(storageRouter);
 router.use(matchReportsRouter);
+router.use(storageRouter);
 
 export default router;
