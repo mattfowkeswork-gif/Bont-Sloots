@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   useListFixtures, useListPlayers, useCreateStat, useDeleteStat,
   useGetFixturePlayers,
-  getListStatsQueryKey, getGetDashboardQueryKey, getGetSquadStatsQueryKey,
+  getListStatsQueryKey, getGetDashboardQueryKey, getGetSquadStatsQueryKey, getGetPlayerQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -131,6 +131,7 @@ export function AdminStats() {
       toast({ title: `+${amount} XP bonus awarded ⭐` });
       queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetPlayerQueryKey(Number(bonusPlayerId)) });
       setBonusAmount("");
       setBonusReason("");
     } catch {
