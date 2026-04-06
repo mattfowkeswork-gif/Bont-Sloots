@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
-import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable, playerValueChangesTable, fixturePlayersTable } from "@workspace/db";
+import { db, fixturesTable, statsTable, awardsTable, playersTable, motmVotesTable, settingsTable, playerValueChangesTable, fixturePlayersTable, playerXpBonusesTable } from "@workspace/db";
 import { calculateXp } from "../lib/xp";
 import { computeAchievements, computeComplexAchievements, totalAchievementXp, type PlayerMatchForAchievements } from "../lib/achievements";
 
@@ -71,6 +71,10 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     .from(awardsTable)
     .innerJoin(fixturesTable, eq(awardsTable.fixtureId, fixturesTable.id));
 
+  const allXpBonuses = await db
+    .select({ playerId: playerXpBonusesTable.playerId, amount: playerXpBonusesTable.amount })
+    .from(playerXpBonusesTable);
+
   const playerStats = players.map(p => {
     const goals = goalCounts.find(g => g.playerId === p.id)?.count ?? 0;
     const assists = assistCounts.find(a => a.playerId === p.id)?.count ?? 0;
@@ -103,7 +107,8 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
       cleanSheetXpMultiplier: 1,
     });
     const achXp = totalAchievementXp(achievements);
-    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position, achievementXp: achXp });
+    const manualXpBonus = allXpBonuses.filter(b => b.playerId === p.id).reduce((s, b) => s + b.amount, 0);
+    const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position, achievementXp: achXp + manualXpBonus });
     const displayName = p.displayName ?? p.name;
     return {
       playerId: p.id,
