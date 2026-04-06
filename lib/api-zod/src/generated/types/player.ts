@@ -9,6 +9,7 @@
 export interface Player {
   id: number;
   name: string;
+  displayName?: string | null;
   position?: string | null;
   scoutingProfile?: string | null;
   photoUrl?: string | null;

@@ -102,6 +102,7 @@ export function AdminPlayers() {
     createPlayer.mutate({
       data: {
         name: formData.get("name") as string,
+        displayName: (formData.get("displayName") as string) || null,
         position: (formData.get("position") as string) || null,
         scoutingProfile: (formData.get("scoutingProfile") as string) || null,
       }
@@ -122,6 +123,7 @@ export function AdminPlayers() {
       id: editingPlayer.id,
       data: {
         name: formData.get("name") as string,
+        displayName: (formData.get("displayName") as string) || null,
         position: (formData.get("position") as string) || null,
         scoutingProfile: (formData.get("scoutingProfile") as string) || null,
       }
@@ -159,8 +161,12 @@ export function AdminPlayers() {
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 pt-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Full Name <span className="text-muted-foreground text-xs">(used for initials)</span></Label>
                 <Input id="name" name="name" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="displayName">Display Name <span className="text-muted-foreground text-xs">(shown on profiles)</span></Label>
+                <Input id="displayName" name="displayName" placeholder="e.g. Tommy, Big Dave..." />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="position">Position</Label>
@@ -190,7 +196,7 @@ export function AdminPlayers() {
                     {/* Mini avatar */}
                     <JerseyCircle name={player.name} position={player.position} size="sm" />
                     <div className="min-w-0">
-                      <div className="font-bold">{player.name}</div>
+                      <div className="font-bold">{(player as any).displayName ?? player.name}</div>
                       <div className="text-xs text-muted-foreground">{player.position || "No position"}</div>
                       {player.scoutingProfile && (
                         <div className="text-xs text-muted-foreground mt-1 italic truncate">"{player.scoutingProfile}"</div>
@@ -222,8 +228,12 @@ export function AdminPlayers() {
                             {/* Player details form */}
                             <form onSubmit={handleUpdate} className="space-y-4">
                               <div className="grid gap-2">
-                                <Label htmlFor="edit-name">Full Name</Label>
+                                <Label htmlFor="edit-name">Full Name <span className="text-muted-foreground text-xs">(used for initials)</span></Label>
                                 <Input id="edit-name" name="name" defaultValue={editingPlayer.name} required />
+                              </div>
+                              <div className="grid gap-2">
+                                <Label htmlFor="edit-displayName">Display Name <span className="text-muted-foreground text-xs">(shown on profiles)</span></Label>
+                                <Input id="edit-displayName" name="displayName" defaultValue={editingPlayer.displayName ?? ""} placeholder="e.g. Tommy, Big Dave..." />
                               </div>
                               <div className="grid gap-2">
                                 <Label htmlFor="edit-position">Position</Label>

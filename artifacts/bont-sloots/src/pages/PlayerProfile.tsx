@@ -332,7 +332,7 @@ export function PlayerProfile() {
             className="mb-4"
           />
 
-          <h1 className="text-2xl font-black text-white">{player.name}</h1>
+          <h1 className="text-2xl font-black text-white">{(player as any).displayName ?? player.name}</h1>
           <div className="text-primary font-medium mt-1">{player.position || "Squad Player"}</div>
 
           {/* Market Value + Trend */}

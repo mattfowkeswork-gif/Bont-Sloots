@@ -8,6 +8,7 @@
 
 export interface CreatePlayerBody {
   name: string;
+  displayName?: string | null;
   position?: string | null;
   scoutingProfile?: string | null;
 }

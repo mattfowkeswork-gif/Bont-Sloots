@@ -122,7 +122,7 @@ export function Leaderboard() {
                     <Link href={`/players/${player.playerId}`}>
                       <div className="flex items-center gap-2 hover:text-primary transition-colors">
                         <JerseyCircle name={player.playerName} position={player.position} size="xs" />
-                        <span className="font-medium text-white whitespace-nowrap">{player.playerName}</span>
+                        <span className="font-medium text-white whitespace-nowrap">{player.displayName ?? player.playerName}</span>
                       </div>
                     </Link>
                   </td>

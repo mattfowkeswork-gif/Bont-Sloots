@@ -9,6 +9,7 @@
 export interface SquadStatRow {
   playerId: number;
   playerName: string;
+  displayName?: string | null;
   position?: string | null;
   scoutingProfile?: string | null;
   photoUrl?: string | null;

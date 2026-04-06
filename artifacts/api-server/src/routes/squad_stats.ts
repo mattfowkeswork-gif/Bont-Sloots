@@ -27,7 +27,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   // Short-circuit when season has no fixtures
   if (seasonFixtureIds !== null && seasonFixtureIds.length === 0) {
     const result = players.map(p => ({
-      playerId: p.id, playerName: p.name, position: p.position ?? null,
+      playerId: p.id, playerName: p.name, displayName: p.displayName ?? null, position: p.position ?? null,
       scoutingProfile: p.scoutingProfile ?? null, photoUrl: p.photoUrl ?? null,
       apps: 0, goals: 0, assists: 0, motmVotes: 0, momAwards: 0, muppetAwards: 0,
       marketValue: 5_000_000, avgRating: null, recentForm: [], lastMatchChange: null, isKing: false, isMuppet: false,
@@ -272,6 +272,7 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     return {
       playerId: p.id,
       playerName: p.name,
+      displayName: p.displayName ?? null,
       position: p.position ?? null,
       scoutingProfile: p.scoutingProfile ?? null,
       photoUrl: p.photoUrl ?? null,

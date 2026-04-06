@@ -148,7 +148,7 @@ export function Squad() {
 
                 {/* Name */}
                 <div className="font-black text-white text-xs leading-tight mb-1 uppercase tracking-wide line-clamp-2">
-                  {player.playerName}
+                  {player.displayName ?? player.playerName}
                   {player.isMuppet && <span className="ml-1 text-[8px] text-red-400 font-bold">🤡</span>}
                 </div>
 

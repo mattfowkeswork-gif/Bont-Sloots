@@ -20,6 +20,7 @@ export const HealthCheckResponse = zod.object({
 export const ListPlayersResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
+  displayName: zod.string().nullish(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
   photoUrl: zod.string().nullish(),
@@ -32,6 +33,7 @@ export const ListPlayersResponse = zod.array(ListPlayersResponseItem);
  */
 export const CreatePlayerBody = zod.object({
   name: zod.string(),
+  displayName: zod.string().nullish(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
 });
@@ -46,6 +48,7 @@ export const GetPlayerParams = zod.object({
 export const GetPlayerResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
+  displayName: zod.string().nullish(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
   photoUrl: zod.string().nullish(),
@@ -88,6 +91,7 @@ export const UpdatePlayerParams = zod.object({
 
 export const UpdatePlayerBody = zod.object({
   name: zod.string(),
+  displayName: zod.string().nullish(),
   position: zod.string().nullish(),
   scoutingProfile: zod.string().nullish(),
 });

@@ -23,6 +23,7 @@ router.get("/players", async (_req, res): Promise<void> => {
   res.json(players.map(p => ({
     id: p.id,
     name: p.name,
+    displayName: p.displayName ?? null,
     position: p.position ?? null,
     scoutingProfile: p.scoutingProfile ?? null,
     photoUrl: p.photoUrl ?? null,
@@ -38,12 +39,14 @@ router.post("/players", async (req, res): Promise<void> => {
   }
   const [player] = await db.insert(playersTable).values({
     name: parsed.data.name,
+    displayName: parsed.data.displayName ?? null,
     position: parsed.data.position ?? null,
     scoutingProfile: parsed.data.scoutingProfile ?? null,
   }).returning();
   res.status(201).json({
     id: player.id,
     name: player.name,
+    displayName: player.displayName ?? null,
     position: player.position ?? null,
     scoutingProfile: player.scoutingProfile ?? null,
     createdAt: player.createdAt,
@@ -255,6 +258,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   res.json({
     id: player.id,
     name: player.name,
+    displayName: player.displayName ?? null,
     position: player.position ?? null,
     scoutingProfile: player.scoutingProfile ?? null,
     photoUrl: player.photoUrl ?? null,
@@ -306,6 +310,7 @@ router.put("/players/:id", async (req, res): Promise<void> => {
     .update(playersTable)
     .set({
       name: parsed.data.name,
+      displayName: parsed.data.displayName ?? null,
       position: parsed.data.position ?? null,
       scoutingProfile: (parsed.data as any).scoutingProfile ?? null,
     })
@@ -318,6 +323,7 @@ router.put("/players/:id", async (req, res): Promise<void> => {
   res.json({
     id: player.id,
     name: player.name,
+    displayName: player.displayName ?? null,
     position: player.position ?? null,
     scoutingProfile: player.scoutingProfile ?? null,
     createdAt: player.createdAt,
