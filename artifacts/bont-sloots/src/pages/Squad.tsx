@@ -227,15 +227,13 @@ export function Squad() {
                 </div>
 
                 {/* Level badge */}
-                {((player as any).level ?? 0) > 0 && (
-                  <div className="flex items-center gap-1 mb-2">
-                    <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-primary">
-                      <Zap className="w-2.5 h-2.5" />
-                      LVL {(player as any).level}
-                    </span>
-                    <span className="text-[8px] text-muted-foreground font-mono">{(player as any).totalXp ?? 0} XP</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-primary">
+                    <Zap className="w-2.5 h-2.5" />
+                    LVL {(player as any).level ?? 1}
+                  </span>
+                  <span className="text-[8px] text-muted-foreground font-mono">{(player as any).totalXp ?? 0} XP</span>
+                </div>
 
                 {/* Stats */}
                 <div className="w-full grid grid-cols-3 gap-1 text-[10px] border-t border-white/10 pt-2 mt-auto">

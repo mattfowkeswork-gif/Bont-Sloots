@@ -57,10 +57,10 @@ export function xpRequiredForLevel(level: number): number {
 
 /**
  * Calculates the level from a given amount of progression XP.
+ * Everyone starts at Level 1. Each subsequent level requires more XP.
  */
 export function calculateLevel(progressionXp: number): number {
-  if (progressionXp <= 0) return 0;
-  let level = 0;
+  let level = 1;
   let remaining = progressionXp;
   while (true) {
     const cost = xpRequiredForLevel(level + 1);
@@ -91,7 +91,8 @@ export function calculateXp(input: PlayerXpInput): PlayerXpResult {
   const totalXp = progressionXp + xpBreakdown.muppet;
 
   const level = calculateLevel(progressionXp);
-  const xpAtCurrentLevel = xpToReachLevel(level);
+  // level starts at 1 with 0 XP; xpToReachLevel(level-1) gives the XP threshold for the current level
+  const xpAtCurrentLevel = xpToReachLevel(level - 1);
   const xpIntoLevel = progressionXp - xpAtCurrentLevel;
   const xpForNextLevel = xpRequiredForLevel(level + 1);
 
