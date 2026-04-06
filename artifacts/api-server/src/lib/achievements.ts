@@ -20,7 +20,7 @@ export interface EarnedAchievement extends AchievementDef {
 
 export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   // ── Tier 1: Basics ──────────────────────────────────────────────────────────
-  { id: "first_blood",      name: "First Blood",           description: "Score your 1st career goal",                          icon: "🆕", tier: "basic",     xp: 100  },
+  { id: "first_blood",      name: "Sloots Debut",           description: "Make your first appearance",                          icon: "🔥", tier: "basic",     xp: 100  },
   { id: "the_playmaker",    name: "The Playmaker",          description: "Register your 1st career assist",                    icon: "🅰️", tier: "basic",     xp: 100  },
   { id: "safe_hands",       name: "Safe Hands",             description: "Keep your 1st career clean sheet",                   icon: "🧤", tier: "basic",     xp: 100  },
   { id: "match_fit",        name: "Match Fit",              description: "Make 5 total career appearances",                    icon: "🏃", tier: "basic",     xp: 250  },
@@ -149,7 +149,7 @@ export function computeAchievements(input: AchievementInput): EarnedAchievement[
   const earned = new Set<string>();
 
   // ── Tier 1: Basics ──────────────────────────────────────────────────────────
-  if (input.goals >= 1)                                  earned.add("first_blood");
+  if (input.apps >= 1)                                   earned.add("first_blood");
   if (input.assists >= 1)                                earned.add("the_playmaker");
   if (input.cleanSheets >= 1)                            earned.add("safe_hands");
   if (input.apps >= 5)                                   earned.add("match_fit");
