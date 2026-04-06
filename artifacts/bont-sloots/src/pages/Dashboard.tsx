@@ -2,7 +2,7 @@ import { useGetDashboard, getGetDashboardQueryKey } from "@workspace/api-client-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle, ThumbsUp, TrendingUp, ExternalLink, Search } from "lucide-react";
+import { ShieldAlert, MapPin, Calendar, Clock, Trophy, Star, AlertTriangle, ThumbsUp, TrendingUp, ExternalLink, Search, Bot, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, differenceInSeconds } from "date-fns";
@@ -171,6 +171,18 @@ function ScoutReport({ opponent }: { opponent: string }) {
     staleTime: 10 * 60 * 1000,
   });
 
+  const { data: aiData, isLoading: aiLoading } = useQuery<{ summary: string; cached: boolean }>({
+    queryKey: ["scout-summary", opponent],
+    queryFn: async () => {
+      const res = await fetch(`/api/scout/summary?opponent=${encodeURIComponent(opponent)}`);
+      if (!res.ok) throw new Error("ai failed");
+      return res.json();
+    },
+    retry: false,
+    staleTime: 10 * 60 * 1000,
+    enabled: !isLoading,
+  });
+
   if (isLoading) {
     return (
       <div className="mt-4 pt-4 border-t border-border/30">
@@ -186,12 +198,28 @@ function ScoutReport({ opponent }: { opponent: string }) {
 
   if (isError || !scout) {
     return (
-      <div className="mt-4 pt-4 border-t border-border/30">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="mt-4 pt-4 border-t border-border/30 space-y-3">
+        <div className="flex items-center gap-2">
           <Search className="w-3.5 h-3.5 text-primary/60" />
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">Scout Report</span>
         </div>
-        <p className="text-xs text-muted-foreground">No league data available for this opponent.</p>
+        <p className="text-xs text-muted-foreground">No league data found for this opponent.</p>
+        {(aiLoading || aiData?.summary) && (
+          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Bot className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-[11px] uppercase tracking-widest text-indigo-400/80 font-semibold">AI Scout Analysis</span>
+            </div>
+            {aiLoading ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                <span>Generating analysis...</span>
+              </div>
+            ) : (
+              <p className="text-xs text-white/75 leading-relaxed">{aiData!.summary}</p>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -254,6 +282,27 @@ function ScoutReport({ opponent }: { opponent: string }) {
           ))}
         </div>
       )}
+
+      {/* AI Scout Summary */}
+      <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <Bot className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="text-[11px] uppercase tracking-widest text-indigo-400/80 font-semibold">AI Scout Analysis</span>
+          {aiData?.cached && (
+            <span className="ml-auto text-[9px] text-muted-foreground uppercase tracking-wider">cached</span>
+          )}
+        </div>
+        {aiLoading ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            <span>Generating analysis...</span>
+          </div>
+        ) : aiData?.summary ? (
+          <p className="text-xs text-white/75 leading-relaxed">{aiData.summary}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Analysis unavailable.</p>
+        )}
+      </div>
 
       <a
         href={scout.teamUrl}
