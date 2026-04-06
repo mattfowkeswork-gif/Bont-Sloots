@@ -12,4 +12,5 @@ export type CreateStatBodyType =
 export const CreateStatBodyType = {
   goal: "goal",
   assist: "assist",
+  emergency_gk: "emergency_gk",
 } as const;

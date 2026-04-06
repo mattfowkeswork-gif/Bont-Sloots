@@ -65,10 +65,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   { id: "bont_sloots_elite", name: "Bont Sloots Elite",    description: "Unlock 25 achievements",                             icon: "💎", tier: "meta",      xp: 5000, variant: "diamond" },
 
   // ── Tier 5: Secrets ───────────────────────────────────────────────────────────
-  { id: "the_phoenix",      name: "The Phoenix",            description: "Win MOTM immediately after receiving a Muppet award", icon: "🔥", tier: "secret", xp: 800,  secret: true },
-  { id: "the_joker",        name: "The Joker",              description: "Get an assist and a Muppet in the same match",        icon: "🃏", tier: "secret", xp: 300,  secret: true },
-  { id: "the_professional", name: "The Professional",       description: "Make 10 appearances with zero Muppet awards",         icon: "👔", tier: "secret", xp: 1500, secret: true },
-  { id: "the_ghost",        name: "The Ghost",              description: "Make 3 consecutive appearances with zero stats",       icon: "👻", tier: "secret", xp: 50,   secret: true },
+  { id: "the_phoenix",        name: "The Phoenix",            description: "Win MOTM immediately after receiving a Muppet award", icon: "🔥", tier: "secret", xp: 800,  secret: true },
+  { id: "the_joker",          name: "The Joker",              description: "Get an assist and a Muppet in the same match",        icon: "🃏", tier: "secret", xp: 300,  secret: true },
+  { id: "the_professional",   name: "The Professional",       description: "Make 10 appearances with zero Muppet awards",         icon: "👔", tier: "secret", xp: 1500, secret: true },
+  { id: "the_ghost",          name: "The Ghost",              description: "Make 3 consecutive appearances with zero stats",       icon: "👻", tier: "secret", xp: 50,   secret: true },
+  { id: "emergency_number_1", name: "Emergency Number 1",     description: "Step up as Emergency GK when the team needed you",   icon: "🧤", tier: "secret", xp: 750,  secret: true },
 ];
 
 export interface PlayerMatchForAchievements {
@@ -138,6 +139,8 @@ export interface AchievementInput {
   isGhost: boolean;
   /** 1.0 for GK/DEF, 0.25 for MID/FWD. Defaults to 1.0. */
   cleanSheetXpMultiplier?: number;
+  /** Number of times the player has stepped up as Emergency GK */
+  emergencyGkCount?: number;
 }
 
 const NON_META_IDS = ACHIEVEMENT_DEFS.filter(d => d.tier !== "meta").map(d => d.id);
@@ -190,6 +193,7 @@ export function computeAchievements(input: AchievementInput): EarnedAchievement[
   if (input.isJoker)                                     earned.add("the_joker");
   if (input.apps >= 10 && input.muppetAwards === 0)      earned.add("the_professional");
   if (input.isGhost)                                     earned.add("the_ghost");
+  if ((input.emergencyGkCount ?? 0) >= 1)                earned.add("emergency_number_1");
 
   // ── Meta: Completionist (two-pass — count non-meta earned first) ──────────────
   const nonMetaEarnedCount = NON_META_IDS.filter(id => earned.has(id)).length;

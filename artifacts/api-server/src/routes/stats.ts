@@ -62,6 +62,17 @@ router.get("/stats", async (_req, res): Promise<void> => {
   res.json(result);
 });
 
+// Returns raw stat rows for a specific fixture (used by admin Emergency GK UI)
+router.get("/fixtures/:id/stats", async (req, res): Promise<void> => {
+  const fixtureId = parseInt(req.params.id);
+  if (isNaN(fixtureId)) { res.status(400).json({ error: "Invalid fixture ID" }); return; }
+  const type = req.query.type as string | undefined;
+  const rows = type
+    ? await db.select().from(statsTable).where(and(eq(statsTable.fixtureId, fixtureId), eq(statsTable.type, type)))
+    : await db.select().from(statsTable).where(eq(statsTable.fixtureId, fixtureId));
+  res.json(rows.map(r => ({ id: r.id, playerId: r.playerId, fixtureId: r.fixtureId, type: r.type })));
+});
+
 router.post("/stats", async (req, res): Promise<void> => {
   const parsed = CreateStatBody.safeParse(req.body);
   if (!parsed.success) {

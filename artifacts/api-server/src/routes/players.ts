@@ -87,6 +87,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   const totalGoals = playerStats.find(s => s.type === "goal")?.count ?? 0;
   const totalAssists = playerStats.find(s => s.type === "assist")?.count ?? 0;
   const totalCleanSheets = playerStats.find(s => s.type === "clean_sheet")?.count ?? 0;
+  const totalEmergencyGk = playerStats.find(s => s.type === "emergency_gk")?.count ?? 0;
 
   const playerAwards = await db
     .select({
@@ -259,6 +260,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     isJoker: complex.isJoker,
     isGhost: complex.isGhost,
     cleanSheetXpMultiplier: csMultiplier,
+    emergencyGkCount: totalEmergencyGk,
   });
   const achXp = totalAchievementXp(achievements);
 

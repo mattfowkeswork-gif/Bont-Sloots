@@ -352,7 +352,7 @@ export const ListStatsResponse = zod.array(ListStatsResponseItem);
 export const CreateStatBody = zod.object({
   playerId: zod.number(),
   fixtureId: zod.number(),
-  type: zod.enum(["goal", "assist"]),
+  type: zod.enum(["goal", "assist", "emergency_gk"]),
 });
 
 /**

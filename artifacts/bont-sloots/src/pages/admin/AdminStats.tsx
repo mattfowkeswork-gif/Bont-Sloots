@@ -1,21 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  useListFixtures, useListPlayers, useCreateStat,
+  useListFixtures, useListPlayers, useCreateStat, useDeleteStat,
+  useGetFixturePlayers,
   getListStatsQueryKey, getGetDashboardQueryKey, getGetSquadStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 type StatType = "goal" | "assist" | "clean_sheet";
+type EmergencyGkStat = { id: number; playerId: number };
 
 export function AdminStats() {
   const { data: fixtures } = useListFixtures();
   const { data: players } = useListPlayers();
   const createStat = useCreateStat();
+  const deleteStat = useDeleteStat();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -24,7 +28,29 @@ export function AdminStats() {
   const [statType, setStatType] = useState<StatType>("goal");
   const [count, setCount] = useState(1);
 
+  const [emergencyGkStats, setEmergencyGkStats] = useState<EmergencyGkStat[]>([]);
+  const [loadingEmergencyGk, setLoadingEmergencyGk] = useState<Set<number>>(new Set());
+
   const playedFixtures = fixtures?.filter(f => f.played) || [];
+
+  const { data: fixturePlayers } = useGetFixturePlayers(
+    fixtureId ? Number(fixtureId) : 0,
+    { query: { enabled: !!fixtureId } }
+  );
+
+  // Fetch current emergency GK stats for the selected fixture
+  useEffect(() => {
+    if (!fixtureId) {
+      setEmergencyGkStats([]);
+      return;
+    }
+    fetch(`/api/fixtures/${fixtureId}/stats?type=emergency_gk`)
+      .then(r => r.json())
+      .then(data => setEmergencyGkStats(Array.isArray(data) ? data : []))
+      .catch(() => setEmergencyGkStats([]));
+  }, [fixtureId]);
+
+  const presentPlayers = fixturePlayers?.filter(fp => fp.present) ?? [];
 
   const handleAddStat = async () => {
     if (!fixtureId || !playerId) {
@@ -34,7 +60,6 @@ export function AdminStats() {
 
     const data = { fixtureId: Number(fixtureId), playerId: Number(playerId), type: statType };
 
-    // Fire one mutation per count sequentially
     for (let i = 0; i < count; i++) {
       await new Promise<void>((resolve, reject) =>
         createStat.mutate({ data }, { onSuccess: () => resolve(), onError: reject })
@@ -47,6 +72,40 @@ export function AdminStats() {
     queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
     setCount(1);
+  };
+
+  const handleToggleEmergencyGk = async (playerIdNum: number, currentlyChecked: boolean) => {
+    setLoadingEmergencyGk(prev => new Set(prev).add(playerIdNum));
+    try {
+      if (currentlyChecked) {
+        const stat = emergencyGkStats.find(s => s.playerId === playerIdNum);
+        if (stat) {
+          await new Promise<void>((resolve, reject) =>
+            deleteStat.mutate({ id: stat.id }, { onSuccess: () => resolve(), onError: reject })
+          );
+          setEmergencyGkStats(prev => prev.filter(s => s.playerId !== playerIdNum));
+        }
+      } else {
+        const result = await new Promise<{ id: number; playerId: number }>((resolve, reject) =>
+          createStat.mutate(
+            { data: { playerId: playerIdNum, fixtureId: Number(fixtureId), type: "emergency_gk" as any } },
+            { onSuccess: (data: any) => resolve(data), onError: reject }
+          )
+        );
+        setEmergencyGkStats(prev => [...prev, { id: result.id, playerId: result.playerId }]);
+      }
+      queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
+      toast({ title: currentlyChecked ? "Emergency GK removed" : "Emergency GK awarded 🧤" });
+    } catch {
+      toast({ title: "Failed to update Emergency GK", variant: "destructive" });
+    } finally {
+      setLoadingEmergencyGk(prev => {
+        const next = new Set(prev);
+        next.delete(playerIdNum);
+        return next;
+      });
+    }
   };
 
   return (
@@ -156,6 +215,51 @@ export function AdminStats() {
                 ? "Saving..."
                 : `Record ${count} ${statType === "goal" ? (count === 1 ? "Goal" : "Goals") : statType === "assist" ? (count === 1 ? "Assist" : "Assists") : (count === 1 ? "Clean Sheet" : "Clean Sheets")}`}
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Emergency GK Section */}
+      <div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              🧤 Emergency GK
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Award the "Emergency Number 1" achievement (+750 XP) to any outfield player who stepped up as goalkeeper.
+            </p>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            {!fixtureId ? (
+              <p className="text-sm text-muted-foreground">Select a fixture above to see present players.</p>
+            ) : presentPlayers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No players marked as present for this fixture.</p>
+            ) : (
+              <div className="space-y-3">
+                {presentPlayers.map(fp => {
+                  const isChecked = emergencyGkStats.some(s => s.playerId === fp.playerId);
+                  const isLoading = loadingEmergencyGk.has(fp.playerId);
+                  return (
+                    <div key={fp.playerId} className="flex items-center gap-3">
+                      <Checkbox
+                        id={`egk-${fp.playerId}`}
+                        checked={isChecked}
+                        disabled={isLoading}
+                        onCheckedChange={() => handleToggleEmergencyGk(fp.playerId, isChecked)}
+                      />
+                      <label
+                        htmlFor={`egk-${fp.playerId}`}
+                        className="text-sm font-medium leading-none cursor-pointer select-none"
+                      >
+                        {fp.playerName}
+                        {isChecked && <span className="ml-2 text-xs text-pink-400">Emergency GK ✓</span>}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
