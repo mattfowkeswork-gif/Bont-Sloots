@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bont-sloots-v5';
+const CACHE_NAME = 'bont-sloots-v6';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
