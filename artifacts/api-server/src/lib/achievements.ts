@@ -1,4 +1,4 @@
-export type AchievementTier = "basic" | "grinder" | "milestone" | "elite" | "legendary" | "meta" | "secret";
+export type AchievementTier = "basic" | "milestone" | "elite" | "legendary" | "meta" | "secret";
 export type AchievementVariant = "bronze" | "silver" | "gold" | "diamond";
 export type AchievementGroup = "appearances" | "goals" | "assists" | "clean_sheets";
 
@@ -26,12 +26,6 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   { id: "match_fit",        name: "Match Fit",              description: "Make 5 total career appearances",                    icon: "🏃", tier: "milestone", xp: 250, group: "appearances" },
   { id: "off_the_mark",     name: "Off the Mark",           description: "Score your 1st career goal",                         icon: "🎯", tier: "basic",     xp: 150  },
 
-  // ── Tier 2: Grinders ────────────────────────────────────────────────────────
-  { id: "the_specialist",   name: "The Specialist",         description: "Score 10 career goals",                              icon: "⚽", tier: "grinder",   xp: 750  },
-  { id: "the_engine",       name: "The Engine",             description: "Make 10 career appearances",                         icon: "⚙️", tier: "grinder",   xp: 750  },
-  { id: "brick_wall",       name: "Brick Wall",             description: "Keep 5 career clean sheets",                         icon: "🛡️", tier: "grinder",   xp: 750  },
-  { id: "the_architect",    name: "The Architect",          description: "Register 5 career assists",                          icon: "📐", tier: "grinder",   xp: 500  },
-
   // ── Tier Milestone: Appearances ─────────────────────────────────────────────
   { id: "the_regular",      name: "The Regular",            description: "Make 10 career appearances",                         icon: "🥉", tier: "milestone", xp: 500,  variant: "bronze",  group: "appearances" },
   { id: "the_veteran",      name: "The Veteran",            description: "Make 25 career appearances",                         icon: "🥈", tier: "milestone", xp: 1250, variant: "silver",  group: "appearances" },
@@ -39,16 +33,19 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   { id: "the_centurion",    name: "The Centurion",          description: "Make 100 career appearances",                        icon: "💯", tier: "milestone", xp: 5000, variant: "diamond", group: "appearances" },
 
   // ── Tier Milestone: Goals ────────────────────────────────────────────────────
+  { id: "the_specialist",   name: "The Specialist",         description: "Score 5 career goals",                               icon: "⚽", tier: "milestone", xp: 750,                      group: "goals" },
   { id: "double_digits",    name: "Double Digits",          description: "Score 10 career goals",                              icon: "🔟", tier: "milestone", xp: 750,  variant: "bronze",  group: "goals" },
   { id: "silver_boot",      name: "The Silver Boot",        description: "Score 25 career goals",                              icon: "🥈", tier: "milestone", xp: 2000, variant: "silver",  group: "goals" },
   { id: "golden_boot",      name: "The Golden Boot",        description: "Score 50 career goals",                              icon: "🥇", tier: "milestone", xp: 4500, variant: "gold",    group: "goals" },
 
   // ── Tier Milestone: Assists ───────────────────────────────────────────────────
+  { id: "the_architect",    name: "The Architect",          description: "Register 5 career assists",                          icon: "📐", tier: "milestone", xp: 500,                      group: "assists" },
   { id: "helper",           name: "Helper",                 description: "Register 10 career assists",                         icon: "🤝", tier: "milestone", xp: 750,  variant: "bronze",  group: "assists" },
   { id: "the_maestro",      name: "The Maestro",            description: "Register 25 career assists",                         icon: "🎼", tier: "milestone", xp: 2000, variant: "silver",  group: "assists" },
   { id: "supply_line",      name: "The Supply Line",        description: "Register 50 career assists",                         icon: "🚚", tier: "milestone", xp: 4500, variant: "gold",    group: "assists" },
 
   // ── Tier Milestone: Clean Sheets ──────────────────────────────────────────────
+  { id: "brick_wall",       name: "Brick Wall",             description: "Keep 5 career clean sheets",                         icon: "🛡️", tier: "milestone", xp: 750,                      group: "clean_sheets" },
   { id: "solid",            name: "Solid",                  description: "Keep 10 career clean sheets",                        icon: "🧱", tier: "milestone", xp: 750,  variant: "bronze",  group: "clean_sheets" },
   { id: "lockdown",         name: "The Lockdown",           description: "Keep 25 career clean sheets",                        icon: "🔒", tier: "milestone", xp: 2000, variant: "silver",  group: "clean_sheets" },
   { id: "great_wall",       name: "The Great Wall",         description: "Keep 50 career clean sheets",                        icon: "🏯", tier: "milestone", xp: 4500, variant: "gold",    group: "clean_sheets" },
@@ -125,7 +122,7 @@ export function computeComplexAchievements(
   return { hatTrickCount, isPhoenix, isJoker, isGhost };
 }
 
-const CLEAN_SHEET_ACHIEVEMENT_IDS = new Set(["solid", "lockdown", "great_wall"]);
+const CLEAN_SHEET_ACHIEVEMENT_IDS = new Set(["brick_wall", "solid", "lockdown", "great_wall"]);
 
 export interface AchievementInput {
   apps: number;
@@ -155,12 +152,6 @@ export function computeAchievements(input: AchievementInput): EarnedAchievement[
   if (input.apps >= 5)                                   earned.add("match_fit");
   if (input.goals >= 1)                                  earned.add("off_the_mark");
 
-  // ── Tier 2: Grinders ────────────────────────────────────────────────────────
-  if (input.goals >= 10)                                 earned.add("the_specialist");
-  if (input.apps >= 10)                                  earned.add("the_engine");
-  if (input.cleanSheets >= 5)                            earned.add("brick_wall");
-  if (input.assists >= 5)                                earned.add("the_architect");
-
   // ── Milestones: Appearances ──────────────────────────────────────────────────
   if (input.apps >= 10)                                  earned.add("the_regular");
   if (input.apps >= 25)                                  earned.add("the_veteran");
@@ -168,16 +159,19 @@ export function computeAchievements(input: AchievementInput): EarnedAchievement[
   if (input.apps >= 100)                                 earned.add("the_centurion");
 
   // ── Milestones: Goals ────────────────────────────────────────────────────────
+  if (input.goals >= 5)                                  earned.add("the_specialist");
   if (input.goals >= 10)                                 earned.add("double_digits");
   if (input.goals >= 25)                                 earned.add("silver_boot");
   if (input.goals >= 50)                                 earned.add("golden_boot");
 
   // ── Milestones: Assists ───────────────────────────────────────────────────────
+  if (input.assists >= 5)                                earned.add("the_architect");
   if (input.assists >= 10)                               earned.add("helper");
   if (input.assists >= 25)                               earned.add("the_maestro");
   if (input.assists >= 50)                               earned.add("supply_line");
 
   // ── Milestones: Clean Sheets ──────────────────────────────────────────────────
+  if (input.cleanSheets >= 5)                            earned.add("brick_wall");
   if (input.cleanSheets >= 10)                           earned.add("solid");
   if (input.cleanSheets >= 25)                           earned.add("lockdown");
   if (input.cleanSheets >= 50)                           earned.add("great_wall");

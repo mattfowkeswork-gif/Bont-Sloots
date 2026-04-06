@@ -48,7 +48,7 @@ function XpProgressBar({ xpIntoLevel, xpForNextLevel, level }: { xpIntoLevel: nu
   );
 }
 
-type AchievementTier = "basic" | "grinder" | "milestone" | "elite" | "legendary" | "meta" | "secret";
+type AchievementTier = "basic" | "milestone" | "elite" | "legendary" | "meta" | "secret";
 type AchievementVariant = "bronze" | "silver" | "gold" | "diamond";
 type AchievementGroup = "appearances" | "goals" | "assists" | "clean_sheets";
 
@@ -67,7 +67,6 @@ interface Achievement {
 
 const TIER_LABELS: Record<AchievementTier, string> = {
   basic: "Basics",
-  grinder: "The Grinders",
   milestone: "Career Milestones",
   elite: "Elite",
   legendary: "Legendary",
@@ -77,7 +76,6 @@ const TIER_LABELS: Record<AchievementTier, string> = {
 
 const TIER_COLORS: Record<AchievementTier, string> = {
   basic: "text-muted-foreground",
-  grinder: "text-blue-400",
   milestone: "text-orange-400",
   elite: "text-purple-400",
   legendary: "text-yellow-400",
@@ -92,7 +90,7 @@ const MILESTONE_GROUP_LABELS: Record<AchievementGroup, string> = {
   clean_sheets: "Clean Sheets",
 };
 
-const TIER_ORDER: AchievementTier[] = ["basic", "grinder", "milestone", "elite", "legendary", "meta", "secret"];
+const TIER_ORDER: AchievementTier[] = ["basic", "milestone", "elite", "legendary", "meta", "secret"];
 
 const VARIANT_STYLES: Record<AchievementVariant, { border: string; bg: string; text: string; shadow?: string }> = {
   bronze:  { border: "border-orange-600/60", bg: "bg-orange-700/15",  text: "text-orange-400" },
