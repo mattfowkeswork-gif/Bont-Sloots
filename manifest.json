@@ -1,0 +1,16 @@
+{
+  "name": "Bont Sloots FC",
+  "short_name": "Bont Sloots",
+  "description": "Bont Sloots FC - 6-a-side football team PWA",
+  "theme_color": "#7D1D3F",
+  "background_color": "#111111",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/badge.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}

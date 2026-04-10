@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <rect width="500" height="500" fill="#1c1c1e"/>
+  <!-- Jersey body -->
+  <path d="M150 140 L90 200 L130 220 L130 380 L370 380 L370 220 L410 200 L350 140 C330 160 280 170 250 170 C220 170 170 160 150 140Z" fill="#3a1520" stroke="#7f1d3c" stroke-width="6"/>
+  <!-- Collar -->
+  <path d="M200 140 C210 165 240 175 250 175 C260 175 290 165 300 140 C280 135 220 135 200 140Z" fill="#1c1c1e" stroke="#7f1d3c" stroke-width="4"/>
+  <!-- Sleeves -->
+  <path d="M150 140 L90 200 L130 220 L160 180Z" fill="#3a1520" stroke="#7f1d3c" stroke-width="4"/>
+  <path d="M350 140 L410 200 L370 220 L340 180Z" fill="#3a1520" stroke="#7f1d3c" stroke-width="4"/>
+  <!-- Silhouette head -->
+  <circle cx="250" cy="100" r="42" fill="#2a2a2e" stroke="#7f1d3c" stroke-width="4"/>
+  <!-- Silhouette shoulders -->
+  <ellipse cx="250" cy="145" rx="38" ry="16" fill="#2a2a2e"/>
+</svg>

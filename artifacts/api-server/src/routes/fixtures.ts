@@ -104,7 +104,7 @@ router.post("/fixtures", async (req, res): Promise<void> => {
   }
   const [fixture] = await db.insert(fixturesTable).values({
     opponent: parsed.data.opponent,
-    matchDate: parsed.data.matchDate,
+    matchDate: parsed.data.matchDate.toISOString().split("T")[0],
     kickoffTime: parsed.data.kickoffTime ?? null,
     kickoffTbc: parsed.data.kickoffTbc,
     isHome: parsed.data.isHome,
