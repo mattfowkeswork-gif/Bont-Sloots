@@ -232,7 +232,15 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
     const assists = assistCounts.find(a => a.playerId === p.id)?.count ?? 0;
     const cleanSheets = cleanSheetCounts.find(c => c.playerId === p.id)?.count ?? 0;
     const emergencyGk = emergencyGkCounts.find(e => e.playerId === p.id)?.count ?? 0;
-    const motmVotes = motmCounts.find(m => m.playerId === p.id)?.count ?? 0;
+    const motmVotes = allFanMotmVotes.reduce((wins, row, _idx, allRows) => {
+  if (row.playerId !== p.id) return wins;
+
+  const rowsForFixture = allRows.filter(r => r.fixtureId === row.fixtureId);
+  const maxVotes = Math.max(...rowsForFixture.map(r => r.votes));
+
+  if (row.votes === maxVotes) return wins + 1;
+  return wins;
+}, 0);
     const momAwards = momCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const muppetAwards = muppetCounts.find(m => m.playerId === p.id)?.count ?? 0;
     const isKing = (kingCounts.find(k => k.playerId === p.id)?.count ?? 0) > 0;
