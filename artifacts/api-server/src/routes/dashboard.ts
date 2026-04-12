@@ -52,8 +52,32 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
       .from(awardsTable).where(eq(awardsTable.type, "mom")).groupBy(awardsTable.playerId),
     db.select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
       .from(awardsTable).where(eq(awardsTable.type, "motm")).groupBy(awardsTable.playerId),
-    db.select({ playerId: motmVotesTable.playerId, count: sql<number>`count(*)::int` })
-      .from(motmVotesTable).groupBy(motmVotesTable.playerId),
+    (async () => {
+  const allFanMotmVotes = await db
+    .select({
+      fixtureId: motmVotesTable.fixtureId,
+      playerId: motmVotesTable.playerId,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(motmVotesTable)
+    .groupBy(motmVotesTable.fixtureId, motmVotesTable.playerId);
+
+  const wins: Record<number, number> = {};
+
+  for (const row of allFanMotmVotes) {
+    const rowsForFixture = allFanMotmVotes.filter(r => r.fixtureId === row.fixtureId);
+    const maxVotes = Math.max(...rowsForFixture.map(r => r.count));
+
+    if (row.count === maxVotes) {
+      wins[row.playerId] = (wins[row.playerId] || 0) + 1;
+    }
+  }
+
+  return Object.entries(wins).map(([playerId, count]) => ({
+    playerId: Number(playerId),
+    count,
+  }));
+})(),
     db.select({ playerId: fixturePlayersTable.playerId, count: sql<number>`count(*)::int` })
       .from(fixturePlayersTable).where(eq(fixturePlayersTable.present, true)).groupBy(fixturePlayersTable.playerId),
     db.select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
