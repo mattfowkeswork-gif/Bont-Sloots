@@ -113,12 +113,25 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     .where(eq(fixturePlayersTable.playerId, player.id));
   const apps = appsRow?.count ?? 0;
 
-  // Fan MOTM votes won
-  const [motmVotesRow] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(motmVotesTable)
-    .where(eq(motmVotesTable.playerId, player.id));
-  const motmVotes = motmVotesRow?.count ?? 0;
+// Fan MOTM wins
+const allFanMotmVotes = await db
+  .select({
+    fixtureId: motmVotesTable.fixtureId,
+    playerId: motmVotesTable.playerId,
+    votes: sql<number>`count(*)::int`,
+  })
+  .from(motmVotesTable)
+  .groupBy(motmVotesTable.fixtureId, motmVotesTable.playerId);
+
+const motmVotes = allFanMotmVotes.reduce((wins, row, _idx, allRows) => {
+  if (row.playerId !== player.id) return wins;
+
+  const rowsForFixture = allRows.filter(r => r.fixtureId === row.fixtureId);
+  const maxVotes = Math.max(...rowsForFixture.map(r => r.votes));
+  const winners = rowsForFixture.filter(r => r.votes === maxVotes);
+
+  return wins + (row.votes === maxVotes && winners.length === 1 ? 1 : 0);
+}, 0);
 
   // Market value from player_value_changes table (base £5M + sum of all changes)
   const allValueChanges = await db
