@@ -96,14 +96,14 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   const emergencyGkCounts = await emergencyGkQuery.groupBy(statsTable.playerId);
 
   // MOTM fan votes
-  let motmQuery = db
-    .select({ playerId: motmVotesTable.playerId, count: sql<number>`count(*)::int` })
-    .from(motmVotesTable)
-    .$dynamic();
-  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
-    motmQuery = motmQuery.where(inArray(motmVotesTable.fixtureId, seasonFixtureIds) as any);
-  }
-  const motmCounts = await motmQuery.groupBy(motmVotesTable.playerId);
+const allFanMotmVotes = await db
+  .select({
+    fixtureId: motmVotesTable.fixtureId,
+    playerId: motmVotesTable.playerId,
+    votes: sql<number>`count(*)::int`,
+  })
+  .from(motmVotesTable)
+  .groupBy(motmVotesTable.fixtureId, motmVotesTable.playerId);
 
   // Muppet awards
   let muppetQuery = db
