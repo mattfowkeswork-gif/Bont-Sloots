@@ -351,7 +351,7 @@ export function PlayerProfile() {
           { label: "Apps", value: player.apps, color: "text-white" },
           { label: "Goals", value: player.totalGoals, color: "text-primary" },
           { label: "Assists", value: player.totalAssists, color: "text-white" },
-          { label: "Fan MOTMs", value: player.motmCount, color: "text-purple-400" },
+          { label: "Fan MOTMs", value: player.motmVotes, color: "text-purple-400" },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-card border border-border/50 rounded-xl p-4 text-center">
             <div className="text-sm text-muted-foreground uppercase tracking-wider mb-1">{label}</div>
