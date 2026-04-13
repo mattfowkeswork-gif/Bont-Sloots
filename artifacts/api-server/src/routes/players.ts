@@ -126,12 +126,25 @@ const allFanMotmVotes = await db
 const motmVotes = allFanMotmVotes.reduce((wins, row, _idx, allRows) => {
   if (row.playerId !== player.id) return wins;
 
-  const rowsForFixture = allRows.filter(r => r.fixtureId === row.fixtureId);
+  const rowsForFixture = allFanMotmVotes.filter(r => r.fixtureId === row.fixtureId);
   const maxVotes = Math.max(...rowsForFixture.map(r => r.votes));
   const winners = rowsForFixture.filter(r => r.votes === maxVotes);
 
   return wins + (row.votes === maxVotes && winners.length === 1 ? 1 : 0);
 }, 0);
+
+const isKing = allFanMotmVotes.some(row => {
+  if (row.playerId !== player.id) return false;
+
+  const rowsForFixture = allFanMotmVotes.filter(r => r.fixtureId === row.fixtureId);
+  const maxVotes = Math.max(...rowsForFixture.map(r => r.votes));
+  const winners = rowsForFixture.filter(r => r.votes === maxVotes);
+
+  const wonFanMotm = row.votes === maxVotes && winners.length === 1;
+  const wonMotmAward = playerAwards.some(a => a.type === "motm" && a.fixtureId === row.fixtureId);
+
+  return wonFanMotm && wonMotmAward;
+});
 
   // Market value from player_value_changes table (base £5M + sum of all changes)
   const allValueChanges = await db
@@ -305,6 +318,7 @@ const motmVotes = allFanMotmVotes.reduce((wins, row, _idx, allRows) => {
     momCount,
     motmCount,
 motmVotes,
+isKing,
     apps,
     marketValue,
     avgRating,
