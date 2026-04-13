@@ -161,7 +161,7 @@ router.put("/fixtures/:id", async (req, res): Promise<void> => {
     // Open 48-hour voting window when match is first marked as played
     if (parsed.data.played && !current.played) {
       const closes = new Date();
-      closes.setHours(closes.getHours() + 48);
+      closes.setMinutes(closes.getMinutes() + 90);
       updateData.votingClosesAt = closes;
     }
   }
