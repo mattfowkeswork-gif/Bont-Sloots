@@ -304,6 +304,7 @@ const motmVotes = allFanMotmVotes.reduce((wins, row, _idx, allRows) => {
     totalCleanSheets,
     momCount,
     motmCount,
+motmVotes,
     apps,
     marketValue,
     avgRating,
