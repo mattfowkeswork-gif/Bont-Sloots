@@ -149,7 +149,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
   });
 
   const topScorer = [...playerStats].sort((a, b) => b.totalGoals - a.totalGoals)[0] ?? null;
-const topLevel = [...playerStats].sort((a, b) => b.level - a.level || b.totalXp - a.totalXp)[0] ?? null;
+  const topLevel = [...playerStats].sort((a, b) => b.progressionXp - a.progressionXp)[0] ?? null;
 
   // Hall of Fame
   const mostMotmsPlayer = [...playerStats].sort((a, b) => b.fanMotm - a.fanMotm)[0] ?? null;
