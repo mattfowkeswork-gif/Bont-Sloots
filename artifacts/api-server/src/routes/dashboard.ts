@@ -129,8 +129,7 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
       isPhoenix: computeComplexAchievements(matchDataForAchievements).isPhoenix,
       isJoker: computeComplexAchievements(matchDataForAchievements).isJoker,
       isGhost: computeComplexAchievements(matchDataForAchievements).isGhost,
-      cleanSheetXpMultiplier: isGkOrDef(p.position ?? null) ? 1 : 0.25,
-      emergencyGkCount: 0,
+      cleanSheetXpMultiplier: 1,
     });
     const achXp = totalAchievementXp(achievements);
     const xp = calculateXp({ apps, goals, assists, cleanSheets, momAwards: momCount, muppetAwards: motmCount, position: p.position, achievementXp: achXp + manualXpBonus });
