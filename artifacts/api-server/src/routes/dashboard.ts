@@ -83,7 +83,23 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     db.select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
       .from(statsTable).where(eq(statsTable.type, "clean_sheet")).groupBy(statsTable.playerId),
   ]);
+  const goalsPerFixtureAll = await db
+    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(eq(statsTable.type, "goal"))
+    .groupBy(statsTable.playerId, statsTable.fixtureId);
 
+  const assistsPerFixtureAll = await db
+    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(eq(statsTable.type, "assist"))
+    .groupBy(statsTable.playerId, statsTable.fixtureId);
+
+  const cleanSheetsPerFixtureAll = await db
+    .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
+    .from(statsTable)
+    .where(eq(statsTable.type, "clean_sheet"))
+    .groupBy(statsTable.playerId, statsTable.fixtureId);
   const allAppsWithDates = await db
     .select({ playerId: fixturePlayersTable.playerId, fixtureId: fixturePlayersTable.fixtureId, matchDate: fixturesTable.matchDate })
     .from(fixturePlayersTable)
@@ -111,12 +127,16 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
     const playerAwards = allAwardsWithDates.filter(a => a.playerId === p.id);
     const momAwardFids = new Set(playerAwards.filter(a => a.type === "mom").map(a => a.fixtureId));
     const muppetAwardFids = new Set(playerAwards.filter(a => a.type === "motm").map(a => a.fixtureId));
+        const playerGoalsPerFixture = goalsPerFixtureAll.filter(g => g.playerId === p.id);
+    const playerAssistsPerFixture = assistsPerFixtureAll.filter(a => a.playerId === p.id);
+    const playerCleanSheetsPerFixture = cleanSheetsPerFixtureAll.filter(c => c.playerId === p.id);
+
     const matchDataForAchievements: PlayerMatchForAchievements[] = playerApps.map(app => ({
       fixtureId: app.fixtureId,
       matchDate: app.matchDate ?? new Date(0),
-      goals,
-      assists,
-      cleanSheets,
+      goals: playerGoalsPerFixture.find(g => g.fixtureId === app.fixtureId)?.count ?? 0,
+      assists: playerAssistsPerFixture.find(a => a.fixtureId === app.fixtureId)?.count ?? 0,
+      cleanSheets: playerCleanSheetsPerFixture.find(c => c.fixtureId === app.fixtureId)?.count ?? 0,
       hasMomAward: momAwardFids.has(app.fixtureId),
       hasMuppetAward: muppetAwardFids.has(app.fixtureId),
     }));
