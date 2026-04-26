@@ -66,31 +66,48 @@ export default async function handler(req, res) {
       return res.status(201).json(result.rows[0]);
     }
 
-    // ✅ BULK CREATE
-    if (req.method === "POST" && req.url.includes("bulk")) {
-      const fixtures = req.body.fixtures || [];
+// ✅ BULK CREATE
+if (req.method === "POST" && req.url.includes("bulk")) {
+  const { text, defaultYear } = req.body;
 
-      const created = [];
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
-      for (const f of fixtures) {
-        const result = await pool.query(`
-          INSERT INTO fixtures
-          (opponent, match_date, kickoff_time, is_home, played)
-          VALUES ($1,$2,$3,$4,$5)
-          RETURNING *
-        `, [
-          f.opponent,
-          f.matchDate,
-          f.kickoffTime || null,
-          f.isHome ?? true,
-          false
-        ]);
+  const created = [];
 
-        created.push(result.rows[0]);
-      }
+  for (const line of lines) {
+    // Examples:
+    // 12/04 Studs FC
+    // 12/04/2026 Studs FC
+    const parts = line.split(" ");
+    const datePart = parts[0];
+    const opponent = parts.slice(1).join(" ");
+const cleanOpponent = opponent.replace(/^vs\s+/i, "");
 
-      return res.status(201).json(created);
+    let day, month, year;
+
+    if (datePart.includes("/")) {
+      const split = datePart.split("/");
+
+      day = parseInt(split[0]);
+      month = parseInt(split[1]) - 1;
+      year = split[2] ? parseInt(split[2]) : defaultYear;
+    } else {
+      continue;
     }
+
+    const matchDate = new Date(year, month, day);
+
+    const result = await pool.query(`
+      INSERT INTO fixtures (opponent, match_date, is_home, played)
+      VALUES ($1, $2, true, false)
+      RETURNING *
+    `, [cleanOpponent, matchDate]);
+
+    created.push(result.rows[0]);
+  }
+
+  return res.status(201).json(created);
+}
 
     return res.status(405).json({ error: "Method not allowed" });
 
