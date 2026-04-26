@@ -13,15 +13,4 @@
       "destination": "/api/fixtures"
     }
   ]
-}{
-  "rewrites": [
-    {
-      "source": "/dashboard",
-      "destination": "/api/dashboard"
-    },
-    {
-      "source": "/squad-stats",
-      "destination": "/api/squad-stats"
-    }
-  ]
 }
