@@ -29,7 +29,21 @@ export default async function handler(req, res) {
     const players = playersResult.rows;
 
     const upcomingFixtures = fixtures.filter(f => !f.played);
-const nextFixture = upcomingFixtures.length > 0 ? upcomingFixtures[0] : null;
+
+const nextFixtureRaw = upcomingFixtures.length > 0 ? upcomingFixtures[0] : null;
+
+const nextFixture = nextFixtureRaw
+  ? {
+      id: nextFixtureRaw.id,
+      opponent: nextFixtureRaw.opponent,
+      matchDate: nextFixtureRaw.match_date,
+      kickoffTime: nextFixtureRaw.kickoff_time,
+      played: nextFixtureRaw.played,
+      homeScore: nextFixtureRaw.home_score,
+      awayScore: nextFixtureRaw.away_score,
+      isHome: nextFixtureRaw.is_home
+    }
+  : null;
 
     res.status(200).json({
       nextFixture,
