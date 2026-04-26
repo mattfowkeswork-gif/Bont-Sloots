@@ -382,7 +382,7 @@ export function Dashboard() {
               )}
             </div>
             {dashboard.nextFixture.matchDate && (
-              <Countdown targetDate={`${dashboard.nextFixture.matchDate}T${dashboard.nextFixture.kickoffTime || "00:00"}:00`} />
+              <Countdown targetDate={dashboard.nextFixture.matchDate} />
             )}
             <ScoutReport opponent={dashboard.nextFixture.opponent} />
           </CardContent>
