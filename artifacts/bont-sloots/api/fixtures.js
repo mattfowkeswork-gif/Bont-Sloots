@@ -7,113 +7,138 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+function mapFixture(row) {
+  return {
+    id: row.id,
+    opponent: row.opponent,
+    matchDate: row.match_date,
+    kickoffTime: row.kickoff_time,
+    kickoffTbc: row.kickoff_tbc,
+    homeScore: row.home_score,
+    awayScore: row.away_score,
+    played: row.played,
+    isHome: row.is_home,
+    venue: row.venue,
+    notes: row.notes,
+    seasonId: row.season_id,
+    votingClosesAt: row.voting_closes_at,
+  };
+}
+
 export default async function handler(req, res) {
   try {
+    const id = req.query.id;
 
-    // ✅ GET all fixtures
     if (req.method === "GET") {
       const result = await pool.query(`
-        SELECT
-          id,
-          opponent,
-          match_date AS "matchDate",
-          kickoff_time AS "kickoffTime",
-          kickoff_tbc AS "kickoffTbc",
-          home_score AS "homeScore",
-          away_score AS "awayScore",
-          played,
-          is_home AS "isHome",
-          venue,
-          notes,
-          season_id AS "seasonId",
-          voting_closes_at AS "votingClosesAt"
+        SELECT *
         FROM fixtures
         ORDER BY match_date ASC
       `);
 
-      return res.status(200).json(result.rows);
+      return res.status(200).json(result.rows.map(mapFixture));
     }
 
-    // ✅ CREATE single fixture
-    if (req.method === "POST" && !req.url.includes("bulk")) {
-      const {
-        opponent,
-        matchDate,
-        kickoffTime,
-        isHome,
-        venue,
-        played,
-        homeScore,
-        awayScore
-      } = req.body;
+    if (req.method === "POST" && req.url.includes("bulk")) {
+      const { text, defaultYear } = req.body;
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      const created = [];
+
+      for (const line of lines) {
+        const parts = line.split(" ");
+        const datePart = parts[0];
+        const opponent = parts.slice(1).join(" ").replace(/^vs\s+/i, "");
+
+        const split = datePart.split("/");
+        const day = parseInt(split[0]);
+        const month = parseInt(split[1]) - 1;
+        const year = split[2] ? parseInt(split[2]) : defaultYear;
+
+        const matchDate = new Date(year, month, day);
+
+        const result = await pool.query(`
+          INSERT INTO fixtures (opponent, match_date, is_home, played)
+          VALUES ($1, $2, true, false)
+          RETURNING *
+        `, [opponent, matchDate]);
+
+        created.push(mapFixture(result.rows[0]));
+      }
+
+      return res.status(201).json(created);
+    }
+
+    if (req.method === "POST") {
+      const data = req.body;
 
       const result = await pool.query(`
         INSERT INTO fixtures
-        (opponent, match_date, kickoff_time, is_home, venue, played, home_score, away_score)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        (opponent, match_date, kickoff_time, kickoff_tbc, is_home, venue, notes, played, home_score, away_score)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
         RETURNING *
       `, [
-        opponent,
-        matchDate,
-        kickoffTime,
-        isHome ?? true,
-        venue ?? null,
-        played ?? false,
-        homeScore ?? null,
-        awayScore ?? null
+        data.opponent,
+        data.matchDate,
+        data.kickoffTime ?? null,
+        data.kickoffTbc ?? false,
+        data.isHome ?? true,
+        data.venue ?? null,
+        data.notes ?? null,
+        data.played ?? false,
+        data.homeScore ?? null,
+        data.awayScore ?? null,
       ]);
 
-      return res.status(201).json(result.rows[0]);
+      return res.status(201).json(mapFixture(result.rows[0]));
     }
 
-// ✅ BULK CREATE
-if (req.method === "POST" && req.url.includes("bulk")) {
-  const { text, defaultYear } = req.body;
+    if (req.method === "PUT") {
+      const data = req.body;
 
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      const result = await pool.query(`
+        UPDATE fixtures
+        SET
+          opponent = $1,
+          match_date = $2,
+          kickoff_time = $3,
+          kickoff_tbc = $4,
+          is_home = $5,
+          venue = $6,
+          notes = $7,
+          played = $8,
+          home_score = $9,
+          away_score = $10,
+          voting_closes_at = CASE
+            WHEN $8 = true AND played = false THEN NOW() + INTERVAL '90 minutes'
+            ELSE voting_closes_at
+          END
+        WHERE id = $11
+        RETURNING *
+      `, [
+        data.opponent,
+        data.matchDate,
+        data.kickoffTime ?? null,
+        data.kickoffTbc ?? false,
+        data.isHome ?? true,
+        data.venue ?? null,
+        data.notes ?? null,
+        data.played ?? false,
+        data.homeScore ?? null,
+        data.awayScore ?? null,
+        id,
+      ]);
 
-  const created = [];
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Fixture not found" });
+      }
 
-  for (const line of lines) {
-    // Examples:
-    // 12/04 Studs FC
-    // 12/04/2026 Studs FC
-    const parts = line.split(" ");
-    const datePart = parts[0];
-    const opponent = parts.slice(1).join(" ");
-const cleanOpponent = opponent.replace(/^vs\s+/i, "");
-
-    let day, month, year;
-
-    if (datePart.includes("/")) {
-      const split = datePart.split("/");
-
-      day = parseInt(split[0]);
-      month = parseInt(split[1]) - 1;
-      year = split[2] ? parseInt(split[2]) : defaultYear;
-    } else {
-      continue;
+      return res.status(200).json(mapFixture(result.rows[0]));
     }
-
-    const matchDate = new Date(year, month, day);
-
-    const result = await pool.query(`
-      INSERT INTO fixtures (opponent, match_date, is_home, played)
-      VALUES ($1, $2, true, false)
-      RETURNING *
-    `, [cleanOpponent, matchDate]);
-
-    created.push(result.rows[0]);
-  }
-
-  return res.status(201).json(created);
-}
 
     return res.status(405).json({ error: "Method not allowed" });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Fixtures failed",
       message: error.message,
     });

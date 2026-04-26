@@ -21,6 +21,10 @@
       "destination": "/api/fixtures?bulk=true"
     },
     {
+      "source": "/api/fixtures/:id",
+      "destination": "/api/fixtures?id=:id"
+    },
+    {
       "source": "/fixtures/:id/players",
       "destination": "/api/fixture-players?id=:id"
     }
