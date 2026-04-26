@@ -11,6 +11,10 @@
     {
       "source": "/fixtures",
       "destination": "/api/fixtures"
+    },
+    {
+      "source": "/fixtures/:id/players",
+      "destination": "/api/fixture-players?id=:id"
     }
   ]
 }
