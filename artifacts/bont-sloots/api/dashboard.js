@@ -28,8 +28,8 @@ export default async function handler(req, res) {
     const fixtures = fixturesResult.rows;
     const players = playersResult.rows;
 
-    const upcomingFixtures = fixtures.filter(f => !f.played && f.match_date >= today);
-    const nextFixture = upcomingFixtures[0] ?? null;
+    const upcomingFixtures = fixtures.filter(f => !f.played);
+const nextFixture = upcomingFixtures.length > 0 ? upcomingFixtures[0] : null;
 
     res.status(200).json({
       nextFixture,
