@@ -23,6 +23,7 @@ export default async function handler(req, res) {
         COUNT(DISTINCT s_goal.id) AS goals,
         COUNT(DISTINCT s_assist.id) AS assists,
         COUNT(DISTINCT s_clean.id) AS clean_sheets,
+        COUNT(DISTINCT a_mom.id) AS mom_awards,
 
         COALESCE(AVG(pr.rating), NULL) AS avg_rating
 
@@ -42,6 +43,10 @@ export default async function handler(req, res) {
       LEFT JOIN stats s_clean
         ON s_clean.player_id = p.id
         AND s_clean.type = 'clean_sheet'
+
+      LEFT JOIN awards a_mom
+        ON a_mom.player_id = p.id
+        AND a_mom.type = 'mom'
 
       LEFT JOIN player_ratings pr
         ON pr.player_id = p.id
@@ -69,7 +74,7 @@ export default async function handler(req, res) {
       assists: Number(p.assists || 0),
       cleanSheets: Number(p.clean_sheets || 0),
       motmVotes: 0,
-      momAwards: 0,
+      momAwards: Number(p.mom_awards || 0),
       muppetAwards: 0,
       marketValue: 5000000,
       avgRating: p.avg_rating === null ? null : Number(p.avg_rating),
