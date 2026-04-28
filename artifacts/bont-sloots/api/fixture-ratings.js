@@ -21,11 +21,14 @@ export default async function handler(req, res) {
         SELECT
           p.id AS "playerId",
           p.name AS "playerName",
-          COALESCE(fp.present, false) AS present
-        FROM players p
-        LEFT JOIN fixture_players fp
-          ON fp.player_id = p.id
-          AND fp.fixture_id = $1
+          pr.rating
+        FROM fixture_players fp
+        JOIN players p ON p.id = fp.player_id
+        LEFT JOIN player_ratings pr
+          ON pr.fixture_id = fp.fixture_id
+          AND pr.player_id = fp.player_id
+        WHERE fp.fixture_id = $1
+          AND fp.present = true
         ORDER BY p.name ASC
         `,
         [id]
@@ -35,32 +38,35 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "PUT") {
-      const { playerIds } = req.body;
+      const { ratings } = req.body;
 
-      if (!Array.isArray(playerIds)) {
-        return res.status(400).json({ error: "playerIds must be an array" });
+      if (!Array.isArray(ratings)) {
+        return res.status(400).json({ error: "ratings must be an array" });
       }
 
-      await pool.query("DELETE FROM fixture_players WHERE fixture_id = $1", [id]);
-
-      for (const playerId of playerIds) {
+      for (const item of ratings) {
         await pool.query(
           `
-          INSERT INTO fixture_players (fixture_id, player_id, present)
-          VALUES ($1, $2, true)
+          INSERT INTO player_ratings (fixture_id, player_id, rating)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (fixture_id, player_id)
+          DO UPDATE SET rating = EXCLUDED.rating
           `,
-          [id, playerId]
+          [id, item.playerId, item.rating]
         );
       }
 
-      return res.status(200).json({ success: true });
+      return res.status(200).json({
+        success: true,
+        momWinner: null
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: "Fixture players failed",
+      error: "Fixture ratings failed",
       message: error.message,
     });
   }

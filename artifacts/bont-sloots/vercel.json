@@ -31,6 +31,14 @@
     {
       "source": "/api/fixtures/:id/players",
       "destination": "/api/fixture-players?id=:id"
+    },
+    {
+      "source": "/fixtures/:id/ratings",
+      "destination": "/api/fixture-ratings?id=:id"
+    },
+    {
+      "source": "/api/fixtures/:id/ratings",
+      "destination": "/api/fixture-ratings?id=:id"
     }
   ]
 }
