@@ -56,9 +56,44 @@ export default async function handler(req, res) {
         );
       }
 
+      const topResult = await pool.query(
+        `
+        SELECT
+          pr.player_id,
+          p.name
+        FROM player_ratings pr
+        JOIN players p ON p.id = pr.player_id
+        WHERE pr.fixture_id = $1
+        ORDER BY pr.rating DESC, p.name ASC
+        LIMIT 1
+        `,
+        [id]
+      );
+
+      const winner = topResult.rows[0];
+
+      if (winner) {
+        await pool.query(
+          `
+          DELETE FROM awards
+          WHERE fixture_id = $1
+            AND type = 'mom'
+          `,
+          [id]
+        );
+
+        await pool.query(
+          `
+          INSERT INTO awards (fixture_id, player_id, type)
+          VALUES ($1, $2, 'mom')
+          `,
+          [id, winner.player_id]
+        );
+      }
+
       return res.status(200).json({
         success: true,
-        momWinner: null
+        momWinner: winner ? winner.name : null
       });
     }
 
