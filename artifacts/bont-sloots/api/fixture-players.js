@@ -1,3 +1,4 @@
+cat > artifacts/bont-sloots/api/fixture-players.js <<'EOF'
 import pg from "pg";
 
 const { Pool } = pg;
@@ -15,14 +16,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Fixture id is required" });
     }
 
-    // GET players for a fixture
     if (req.method === "GET") {
       const result = await pool.query(
         `
         SELECT
-          SELECT
-  p.id AS "playerId",
-  p.name,
+          p.id AS "playerId",
+          p.name,
           CASE
             WHEN fp.player_id IS NULL THEN false
             ELSE true
@@ -39,7 +38,6 @@ export default async function handler(req, res) {
       return res.status(200).json(result.rows);
     }
 
-    // SAVE selected players
     if (req.method === "PUT") {
       const { playerIds } = req.body;
 
@@ -47,10 +45,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "playerIds must be an array" });
       }
 
-      await pool.query(
-        "DELETE FROM fixture_players WHERE fixture_id = $1",
-        [id]
-      );
+      await pool.query("DELETE FROM fixture_players WHERE fixture_id = $1", [id]);
 
       for (const playerId of playerIds) {
         await pool.query(
@@ -67,7 +62,6 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ error: "Method not allowed" });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -76,3 +70,4 @@ export default async function handler(req, res) {
     });
   }
 }
+EOF
