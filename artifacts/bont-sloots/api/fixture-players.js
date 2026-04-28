@@ -19,9 +19,8 @@ export default async function handler(req, res) {
       const result = await pool.query(
         `
         SELECT
-          p.id AS "playerId",
-p.name,
-p.display_name AS "displayName",
+p.id AS "playerId",
+COALESCE(p.display_name, p.name) AS "playerName",
           CASE
             WHEN fp.player_id IS NULL THEN false
             ELSE true
