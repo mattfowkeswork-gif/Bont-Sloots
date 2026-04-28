@@ -17,13 +17,35 @@ export default async function handler(req, res) {
         p.position,
         p.scouting_profile,
         p.photo_url,
-        COUNT(fp.id) FILTER (WHERE fp.present = true) AS apps,
+
+        COUNT(DISTINCT fp.id) FILTER (WHERE fp.present = true) AS apps,
+
+        COUNT(DISTINCT s_goal.id) AS goals,
+        COUNT(DISTINCT s_assist.id) AS assists,
+        COUNT(DISTINCT s_clean.id) AS clean_sheets,
+
         COALESCE(AVG(pr.rating), NULL) AS avg_rating
+
       FROM players p
+
       LEFT JOIN fixture_players fp
         ON fp.player_id = p.id
+
+      LEFT JOIN stats s_goal
+        ON s_goal.player_id = p.id
+        AND s_goal.type = 'goal'
+
+      LEFT JOIN stats s_assist
+        ON s_assist.player_id = p.id
+        AND s_assist.type = 'assist'
+
+      LEFT JOIN stats s_clean
+        ON s_clean.player_id = p.id
+        AND s_clean.type = 'clean_sheet'
+
       LEFT JOIN player_ratings pr
         ON pr.player_id = p.id
+
       GROUP BY
         p.id,
         p.name,
@@ -31,6 +53,7 @@ export default async function handler(req, res) {
         p.position,
         p.scouting_profile,
         p.photo_url
+
       ORDER BY p.name ASC
     `);
 
@@ -42,9 +65,9 @@ export default async function handler(req, res) {
       scoutingProfile: p.scouting_profile,
       photoUrl: p.photo_url,
       apps: Number(p.apps || 0),
-      goals: 0,
-      assists: 0,
-      cleanSheets: 0,
+      goals: Number(p.goals || 0),
+      assists: Number(p.assists || 0),
+      cleanSheets: Number(p.clean_sheets || 0),
       motmVotes: 0,
       momAwards: 0,
       muppetAwards: 0,
