@@ -9,30 +9,68 @@ const pool = new Pool({
 
 export default async function handler(req, res) {
   try {
-    const result = await pool.query(`
-      SELECT
-        id,
-        opponent,
-        match_date AS "matchDate",
-        kickoff_time AS "kickoffTime",
-        kickoff_tbc AS "kickoffTbc",
-        home_score AS "homeScore",
-        away_score AS "awayScore",
-        played,
-        is_home AS "isHome",
-        venue,
-        notes,
-        season_id AS "seasonId",
-        voting_closes_at AS "votingClosesAt"
-      FROM fixtures
-      ORDER BY match_date ASC
-    `);
+    const { id } = req.query;
 
-    res.status(200).json(result.rows);
+    if (!id) {
+      return res.status(400).json({ error: "Fixture id is required" });
+    }
+
+    // GET players for a fixture
+    if (req.method === "GET") {
+      const result = await pool.query(
+        `
+        SELECT
+          p.id,
+          p.name,
+          CASE
+            WHEN fp.player_id IS NULL THEN false
+            ELSE true
+          END AS present
+        FROM players p
+        LEFT JOIN fixture_players fp
+          ON fp.player_id = p.id
+          AND fp.fixture_id = $1
+        ORDER BY p.name ASC
+        `,
+        [id]
+      );
+
+      return res.status(200).json(result.rows);
+    }
+
+    // SAVE selected players
+    if (req.method === "PUT") {
+      const { playerIds } = req.body;
+
+      if (!Array.isArray(playerIds)) {
+        return res.status(400).json({ error: "playerIds must be an array" });
+      }
+
+      await pool.query(
+        "DELETE FROM fixture_players WHERE fixture_id = $1",
+        [id]
+      );
+
+      for (const playerId of playerIds) {
+        await pool.query(
+          `
+          INSERT INTO fixture_players (fixture_id, player_id)
+          VALUES ($1, $2)
+          ON CONFLICT DO NOTHING
+          `,
+          [id, playerId]
+        );
+      }
+
+      return res.status(200).json({ success: true });
+    }
+
+    return res.status(405).json({ error: "Method not allowed" });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: "Fixtures failed",
+      error: "Fixture players failed",
       message: error.message,
     });
   }
