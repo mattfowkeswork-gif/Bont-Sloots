@@ -27,6 +27,10 @@
     {
       "source": "/fixtures/:id/players",
       "destination": "/api/fixture-players?id=:id"
+    },
+    {
+      "source": "/api/fixtures/:id/players",
+      "destination": "/api/fixture-players?id=:id"
     }
   ]
 }
