@@ -39,6 +39,18 @@
     {
       "source": "/api/fixtures/:id/ratings",
       "destination": "/api/fixture-ratings?id=:id"
+    },
+    {
+      "source": "/stats",
+      "destination": "/api/stats"
+    },
+    {
+      "source": "/api/stats/:id",
+      "destination": "/api/stats?id=:id"
+    },
+    {
+      "source": "/api/fixtures/:id/stats",
+      "destination": "/api/stats?fixtureId=:id"
     }
   ]
 }
