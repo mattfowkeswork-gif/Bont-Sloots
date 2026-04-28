@@ -1,4 +1,3 @@
-cat > artifacts/bont-sloots/api/fixture-players.js <<'EOF'
 import pg from "pg";
 
 const { Pool } = pg;
@@ -70,4 +69,3 @@ export default async function handler(req, res) {
     });
   }
 }
-EOF
