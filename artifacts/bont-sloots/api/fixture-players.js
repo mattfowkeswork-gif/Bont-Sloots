@@ -20,7 +20,8 @@ export default async function handler(req, res) {
         `
         SELECT
           p.id AS "playerId",
-          p.name,
+p.name,
+p.display_name AS "displayName",
           CASE
             WHEN fp.player_id IS NULL THEN false
             ELSE true
