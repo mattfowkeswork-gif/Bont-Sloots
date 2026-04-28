@@ -10,9 +10,28 @@ const pool = new Pool({
 export default async function handler(req, res) {
   try {
     const result = await pool.query(`
-      SELECT id, name, display_name, position, scouting_profile, photo_url
-      FROM players
-      ORDER BY name ASC
+      SELECT
+        p.id,
+        p.name,
+        p.display_name,
+        p.position,
+        p.scouting_profile,
+        p.photo_url,
+        COUNT(fp.id) FILTER (WHERE fp.present = true) AS apps,
+        COALESCE(AVG(pr.rating), NULL) AS avg_rating
+      FROM players p
+      LEFT JOIN fixture_players fp
+        ON fp.player_id = p.id
+      LEFT JOIN player_ratings pr
+        ON pr.player_id = p.id
+      GROUP BY
+        p.id,
+        p.name,
+        p.display_name,
+        p.position,
+        p.scouting_profile,
+        p.photo_url
+      ORDER BY p.name ASC
     `);
 
     const players = result.rows.map(p => ({
@@ -22,7 +41,7 @@ export default async function handler(req, res) {
       position: p.position,
       scoutingProfile: p.scouting_profile,
       photoUrl: p.photo_url,
-      apps: 0,
+      apps: Number(p.apps || 0),
       goals: 0,
       assists: 0,
       cleanSheets: 0,
@@ -30,7 +49,7 @@ export default async function handler(req, res) {
       momAwards: 0,
       muppetAwards: 0,
       marketValue: 5000000,
-      avgRating: null,
+      avgRating: p.avg_rating === null ? null : Number(p.avg_rating),
       recentForm: [],
       lastMatchChange: null,
       isKing: false,
