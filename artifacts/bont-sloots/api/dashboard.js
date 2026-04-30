@@ -148,7 +148,7 @@ const nextFixture = nextFixtureRaw
     res.status(200).json({
       nextFixture,
       votingOpenFixture: null,
-      totalSquadValue: players.length * 5000000,
+      
       seasonRecord: {
         played: fixtures.filter(f => f.played).length,
         wins: 0,
