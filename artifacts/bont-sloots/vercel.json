@@ -63,6 +63,10 @@
     {
       "source": "/api/sync-fixtures",
       "destination": "/api/sync-fixtures"
+    },
+    {
+      "source": "/api/seasons",
+      "destination": "/api/seasons"
     }
   ]
 }
