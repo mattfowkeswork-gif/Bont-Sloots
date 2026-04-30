@@ -22,7 +22,7 @@ const COLUMNS: { key: SortKey; label: string; shortLabel: string }[] = [
 
 export function Leaderboard() {
   const [seasonId, setSeasonId] = useState<string>("");
-  const [sortKey, setSortKey] = useState<SortKey>("goals");
+  const [sortKey, setSortKey] = useState<SortKey>("avgRating");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const { data: seasons } = useListSeasons({});
