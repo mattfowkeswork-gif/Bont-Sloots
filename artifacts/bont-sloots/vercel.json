@@ -59,6 +59,10 @@
     {
       "source": "/api/admin/scout-override",
       "destination": "/api/scout-override"
+    },
+    {
+      "source": "/api/sync-fixtures",
+      "destination": "/api/sync-fixtures"
     }
   ]
 }
