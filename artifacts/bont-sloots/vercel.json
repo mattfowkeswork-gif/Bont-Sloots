@@ -55,6 +55,10 @@
     {
       "source": "/api/players/:id",
       "destination": "/api/player?id=:id"
+    },
+    {
+      "source": "/api/admin/scout-override",
+      "destination": "/api/scout-override"
     }
   ]
 }
