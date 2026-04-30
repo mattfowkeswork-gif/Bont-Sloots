@@ -184,55 +184,13 @@ const nextFixture = nextFixtureRaw
         };
       })(),
       topScorer: null,
-      // Calculate XP + level properly
-      topLevel: players.length > 0
-        ? (() => {
-            const XP_VALUES = {
-              appearance: 100,
-              goal: 50,
-              assist: 50,
-              cleanSheet: 50,
-              mom: 200,
-              muppet: -100,
-            };
-
-            const playerStatsMap = {};
-            
-            stats.forEach(s => {
-              if (!playerStatsMap[s.player_id]) {
-                playerStatsMap[s.player_id] = {
-                  goals: 0,
-                  assists: 0,
-                  cleanSheets: 0,
-                };
-              }
-              if (s.type === "goal") playerStatsMap[s.player_id].goals++;
-              if (s.type === "assist") playerStatsMap[s.player_id].assists++;
-              if (s.type === "clean_sheet") playerStatsMap[s.player_id].cleanSheets++;
-            });
-
-            const playerXp = players.map(p => {
-              const stats = playerStatsMap[p.id] || { goals: 0, assists: 0, cleanSheets: 0 };
-
-              const xp =
-                (stats.goals * XP_VALUES.goal) +
-                (stats.assists * XP_VALUES.assist) +
-                (stats.cleanSheets * XP_VALUES.cleanSheet);
-
-              const level = Math.floor(xp / 1000) + 1;
-
-              return {
-                playerId: p.id,
-                playerName: p.display_name ?? p.name,
-                totalXp: xp,
-                level
-              };
-            });
-
-            playerXp.sort((a, b) => b.level - a.level || b.totalXp - a.totalXp);
-
-            return playerXp[0];
-          })()
+      topLevel: players[0]
+        ? {
+            playerId: players[0].id,
+            playerName: players[0].display_name ?? players[0].name,
+            level: 1,
+            totalXp: 0
+          }
         : null,
       recentResults: fixtures
         .filter(f => f.played)
