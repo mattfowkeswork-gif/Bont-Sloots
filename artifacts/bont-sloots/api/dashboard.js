@@ -268,6 +268,35 @@ export default async function handler(req, res) {
       .map(calculatePlayerDashboardXp)
       .sort((a, b) => b.level - a.level || b.totalXp - a.totalXp)[0] ?? null;
 
+    const votingOpenResult = await pool.query(`
+      SELECT
+        f.id,
+        f.opponent,
+        f.match_date,
+        f.voting_closes_at
+      FROM fixtures f
+      WHERE f.played = true
+        AND f.voting_closes_at IS NOT NULL
+        AND f.voting_closes_at > NOW()
+        AND EXISTS (
+          SELECT 1
+          FROM fixture_players fp
+          WHERE fp.fixture_id = f.id
+            AND fp.present = true
+        )
+      ORDER BY f.match_date DESC
+      LIMIT 1
+    `);
+
+    const votingOpenFixture = votingOpenResult.rows[0]
+      ? {
+          id: votingOpenResult.rows[0].id,
+          opponent: votingOpenResult.rows[0].opponent,
+          matchDate: votingOpenResult.rows[0].match_date,
+          votingClosesAt: votingOpenResult.rows[0].voting_closes_at,
+        }
+      : null;
+
     const upcomingFixtures = fixtures.filter(f => !f.played);
 
 const nextFixtureRaw = upcomingFixtures.length > 0 ? upcomingFixtures[0] : null;
@@ -287,7 +316,7 @@ const nextFixture = nextFixtureRaw
 
     res.status(200).json({
       nextFixture,
-      votingOpenFixture: null,
+      votingOpenFixture,
       
       seasonRecord: (() => {
         const playedFixtures = fixtures.filter(f =>
