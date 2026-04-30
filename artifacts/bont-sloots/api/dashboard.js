@@ -149,14 +149,40 @@ const nextFixture = nextFixtureRaw
       nextFixture,
       votingOpenFixture: null,
       
-      seasonRecord: {
-        played: fixtures.filter(f => f.played).length,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        goalsFor: 0,
-        goalsAgainst: 0
-      },
+      seasonRecord: (() => {
+        const playedFixtures = fixtures.filter(f =>
+          f.played &&
+          f.home_score !== null &&
+          f.away_score !== null
+        );
+
+        let wins = 0;
+        let draws = 0;
+        let losses = 0;
+        let goalsFor = 0;
+        let goalsAgainst = 0;
+
+        for (const f of playedFixtures) {
+          const ourScore = f.is_home ? f.home_score : f.away_score;
+          const theirScore = f.is_home ? f.away_score : f.home_score;
+
+          goalsFor += Number(ourScore || 0);
+          goalsAgainst += Number(theirScore || 0);
+
+          if (ourScore > theirScore) wins++;
+          else if (ourScore < theirScore) losses++;
+          else draws++;
+        }
+
+        return {
+          played: playedFixtures.length,
+          wins,
+          draws,
+          losses,
+          goalsFor,
+          goalsAgainst
+        };
+      })(),
       topScorer: null,
       topLevel: players[0]
         ? {
