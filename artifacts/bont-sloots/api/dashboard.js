@@ -19,6 +19,96 @@ const BROWSER_HEADERS = {
   "Referer": "https://staveley6aside.leaguerepublic.com/"
 };
 
+function isGkOrDef(position) {
+  if (!position) return true;
+  return position === "GK" || position === "DEF";
+}
+
+function xpRequiredForLevel(level) {
+  if (level <= 5) return 500;
+  if (level <= 15) return 1000;
+  if (level <= 30) return 2500;
+  return 5000;
+}
+
+function calculateLevel(progressionXp) {
+  let level = 1;
+  let remaining = progressionXp;
+  while (true) {
+    const cost = xpRequiredForLevel(level + 1);
+    if (remaining < cost) break;
+    remaining -= cost;
+    level++;
+  }
+  return level;
+}
+
+function basicAchievementXp({ apps, goals, assists, cleanSheets, momAwards }) {
+  let xp = 0;
+
+  if (apps >= 1) xp += 100;
+  if (assists >= 1) xp += 100;
+  if (cleanSheets >= 1) xp += 100;
+  if (apps >= 5) xp += 250;
+  if (goals >= 1) xp += 150;
+
+  if (apps >= 10) xp += 500;
+  if (apps >= 25) xp += 1250;
+  if (apps >= 50) xp += 2500;
+  if (apps >= 75) xp += 3500;
+  if (apps >= 100) xp += 5000;
+
+  if (goals >= 5) xp += 750;
+  if (goals >= 10) xp += 750;
+  if (goals >= 25) xp += 2000;
+  if (goals >= 50) xp += 4500;
+
+  if (assists >= 5) xp += 500;
+  if (assists >= 10) xp += 750;
+  if (assists >= 25) xp += 2000;
+  if (assists >= 50) xp += 4500;
+
+  if (cleanSheets >= 5) xp += 750;
+  if (cleanSheets >= 10) xp += 750;
+  if (cleanSheets >= 20) xp += 2500;
+  if (cleanSheets >= 25) xp += 2000;
+  if (cleanSheets >= 50) xp += 4500;
+
+  if (momAwards >= 10) xp += 4000;
+
+  return xp;
+}
+
+function calculatePlayerDashboardXp(row) {
+  const apps = Number(row.apps || 0);
+  const goals = Number(row.goals || 0);
+  const assists = Number(row.assists || 0);
+  const cleanSheets = Number(row.clean_sheets || 0);
+  const momAwards = Number(row.mom_awards || 0);
+  const muppetAwards = Number(row.muppet_awards || 0);
+
+  const cleanSheetRate = isGkOrDef(row.position) ? 50 : 10;
+
+  const baseXp =
+    apps * 100 +
+    goals * 50 +
+    assists * 50 +
+    cleanSheets * cleanSheetRate +
+    momAwards * 200;
+
+  const achievementXp = basicAchievementXp({ apps, goals, assists, cleanSheets, momAwards });
+  const progressionXp = baseXp + achievementXp;
+  const totalXp = progressionXp + muppetAwards * -100;
+  const level = calculateLevel(progressionXp);
+
+  return {
+    playerId: row.id,
+    playerName: row.display_name ?? row.name,
+    level,
+    totalXp,
+  };
+}
+
 function cleanTeamName(name) {
   return String(name || "")
     .replace(/<[^>]+>/g, "")
@@ -128,6 +218,53 @@ export default async function handler(req, res) {
     const fixtures = fixturesResult.rows;
     const players = playersResult.rows;
 
+    const topLevelRowsResult = await pool.query(`
+      WITH present_apps AS (
+        SELECT player_id, COUNT(*)::int AS apps
+        FROM fixture_players
+        WHERE present = true
+        GROUP BY player_id
+      ),
+      stat_counts AS (
+        SELECT s.player_id, s.type, COUNT(*)::int AS count
+        FROM stats s
+        JOIN fixture_players fp
+          ON fp.fixture_id = s.fixture_id
+          AND fp.player_id = s.player_id
+          AND fp.present = true
+        GROUP BY s.player_id, s.type
+      ),
+      award_counts AS (
+        SELECT a.player_id, a.type, COUNT(*)::int AS count
+        FROM awards a
+        JOIN fixture_players fp
+          ON fp.fixture_id = a.fixture_id
+          AND fp.player_id = a.player_id
+          AND fp.present = true
+        GROUP BY a.player_id, a.type
+      )
+      SELECT
+        p.id,
+        p.name,
+        p.display_name,
+        p.position,
+        COALESCE(pa.apps, 0)::int AS apps,
+        COALESCE(MAX(CASE WHEN sc.type = 'goal' THEN sc.count END), 0)::int AS goals,
+        COALESCE(MAX(CASE WHEN sc.type = 'assist' THEN sc.count END), 0)::int AS assists,
+        COALESCE(MAX(CASE WHEN sc.type = 'clean_sheet' THEN sc.count END), 0)::int AS clean_sheets,
+        COALESCE(MAX(CASE WHEN ac.type = 'mom' THEN ac.count END), 0)::int AS mom_awards,
+        COALESCE(MAX(CASE WHEN ac.type = 'motm' THEN ac.count END), 0)::int AS muppet_awards
+      FROM players p
+      LEFT JOIN present_apps pa ON pa.player_id = p.id
+      LEFT JOIN stat_counts sc ON sc.player_id = p.id
+      LEFT JOIN award_counts ac ON ac.player_id = p.id
+      GROUP BY p.id, p.name, p.display_name, p.position, pa.apps
+    `);
+
+    const topLevel = topLevelRowsResult.rows
+      .map(calculatePlayerDashboardXp)
+      .sort((a, b) => b.level - a.level || b.totalXp - a.totalXp)[0] ?? null;
+
     const upcomingFixtures = fixtures.filter(f => !f.played);
 
 const nextFixtureRaw = upcomingFixtures.length > 0 ? upcomingFixtures[0] : null;
@@ -184,14 +321,7 @@ const nextFixture = nextFixtureRaw
         };
       })(),
       topScorer: null,
-      topLevel: players[0]
-        ? {
-            playerId: players[0].id,
-            playerName: players[0].display_name ?? players[0].name,
-            level: 1,
-            totalXp: 0
-          }
-        : null,
+      topLevel,
       recentResults: fixtures
         .filter(f => f.played)
         .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))
