@@ -27,7 +27,9 @@ function getLevelBorderColor(level: number): string {
 }
 
 function XpProgressBar({ xpIntoLevel, xpForNextLevel, level }: { xpIntoLevel: number; xpForNextLevel: number; level: number }) {
-  const pct = Math.min(100, Math.round((xpIntoLevel / xpForNextLevel) * 100));
+  const safeXpIntoLevel = Number.isFinite(xpIntoLevel) ? Math.max(0, xpIntoLevel) : 0;
+  const safeXpForNextLevel = Number.isFinite(xpForNextLevel) && xpForNextLevel > 0 ? xpForNextLevel : 500;
+  const pct = Math.min(100, Math.max(0, Math.round((safeXpIntoLevel / safeXpForNextLevel) * 100)));
   const color = getLevelColor(level);
   const barColor = level >= 20 ? "bg-yellow-400" : level >= 10 ? "bg-purple-400" : level >= 5 ? "bg-blue-400" : "bg-primary";
 
@@ -35,7 +37,7 @@ function XpProgressBar({ xpIntoLevel, xpForNextLevel, level }: { xpIntoLevel: nu
     <div className="w-full space-y-1.5">
       <div className="flex justify-between items-center text-xs">
         <span className={`font-bold ${color}`}>Level {level}</span>
-        <span className="text-muted-foreground font-mono">{xpIntoLevel} / {xpForNextLevel} XP</span>
+        <span className="text-muted-foreground font-mono">{safeXpIntoLevel} / {safeXpForNextLevel} XP</span>
       </div>
       <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden">
         <div
