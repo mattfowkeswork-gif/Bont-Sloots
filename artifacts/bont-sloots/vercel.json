@@ -51,6 +51,10 @@
     {
       "source": "/api/fixtures/:id/stats",
       "destination": "/api/stats?fixtureId=:id"
+    },
+    {
+      "source": "/api/players/:id",
+      "destination": "/api/player?id=:id"
     }
   ]
 }
