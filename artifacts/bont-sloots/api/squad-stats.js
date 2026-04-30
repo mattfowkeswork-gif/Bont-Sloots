@@ -9,6 +9,8 @@ const pool = new Pool({
 
 export default async function handler(req, res) {
   try {
+    const seasonId = req.query.seasonId;
+
     const result = await pool.query(`
       SELECT
         p.id,
@@ -18,7 +20,10 @@ export default async function handler(req, res) {
         p.scouting_profile,
         p.photo_url,
 
-        COUNT(DISTINCT fp.id) FILTER (WHERE fp.present = true) AS apps,
+        COUNT(DISTINCT fp.id) FILTER (
+          WHERE fp.present = true
+          AND ($1::int IS NULL OR f_app.season_id = $1::int)
+        ) AS apps,
 
         COUNT(DISTINCT s_goal.id) AS goals,
         COUNT(DISTINCT s_assist.id) AS assists,
@@ -31,6 +36,9 @@ export default async function handler(req, res) {
 
       LEFT JOIN fixture_players fp
         ON fp.player_id = p.id
+
+      LEFT JOIN fixtures f_app
+        ON f_app.id = fp.fixture_id
 
       LEFT JOIN stats s_goal
         ON s_goal.player_id = p.id
@@ -50,6 +58,10 @@ export default async function handler(req, res) {
 
       LEFT JOIN player_ratings pr
         ON pr.player_id = p.id
+        AND (
+          $1::int IS NULL
+          OR pr.fixture_id IN (SELECT id FROM fixtures WHERE season_id = $1::int)
+        )
 
       GROUP BY
         p.id,
@@ -60,7 +72,7 @@ export default async function handler(req, res) {
         p.photo_url
 
       ORDER BY p.name ASC
-    `);
+    `, [seasonId === "all" || !seasonId ? null : Number(seasonId)]);
 
     const players = result.rows.map(p => ({
       playerId: p.id,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGetSquadStats, useListSeasons, getGetSquadStatsQueryKey } from "@workspace/api-client-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,13 +7,7 @@ import { Link } from "wouter";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { JerseyCircle } from "@/components/JerseyCircle";
 
-function formatMarketValue(value: number) {
-  if (value >= 1_000_000) return `£${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `£${(value / 1_000).toFixed(0)}k`;
-  return `£${value}`;
-}
-
-type SortKey = "playerName" | "apps" | "goals" | "assists" | "momAwards" | "muppetAwards" | "marketValue" | "avgRating";
+type SortKey = "playerName" | "apps" | "goals" | "assists" | "momAwards" | "muppetAwards" | "avgRating";
 type SortDir = "asc" | "desc";
 
 const COLUMNS: { key: SortKey; label: string; shortLabel: string }[] = [
@@ -24,15 +18,28 @@ const COLUMNS: { key: SortKey; label: string; shortLabel: string }[] = [
   { key: "avgRating", label: "Avg Rating", shortLabel: "Rtg" },
   { key: "momAwards", label: "Man of Match", shortLabel: "MOM" },
   { key: "muppetAwards", label: "Muppet", shortLabel: "Mup" },
-  { key: "marketValue", label: "Market Value", shortLabel: "Value" },
 ];
 
 export function Leaderboard() {
-  const [seasonId, setSeasonId] = useState<string>("all");
-  const [sortKey, setSortKey] = useState<SortKey>("marketValue");
+  const [seasonId, setSeasonId] = useState<string>("");
+  const [sortKey, setSortKey] = useState<SortKey>("goals");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const { data: seasons } = useListSeasons({});
+
+  const uniqueSeasons = seasons
+    ? seasons.filter((season, index, array) =>
+        array.findIndex(s => s.name === season.name) === index
+      )
+    : [];
+
+  useEffect(() => {
+    if (!seasonId && uniqueSeasons.length > 0) {
+      const current = uniqueSeasons.find(s => s.isCurrent) ?? uniqueSeasons[uniqueSeasons.length - 1];
+      setSeasonId(String(current.id));
+    }
+  }, [seasonId, uniqueSeasons]);
+
   const { data: squadStats, isLoading } = useGetSquadStats(
     seasonId === "all" ? {} : { seasonId: parseInt(seasonId) },
     { query: { queryKey: getGetSquadStatsQueryKey(seasonId === "all" ? {} : { seasonId: parseInt(seasonId) }) } }
@@ -72,14 +79,14 @@ export function Leaderboard() {
           <h1 className="text-2xl font-black uppercase tracking-tight text-white">Squad Stats</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Tap a column to sort</p>
         </div>
-        {seasons && seasons.length > 1 && (
+        {uniqueSeasons.length > 0 && (
           <Select value={seasonId} onValueChange={setSeasonId}>
             <SelectTrigger className="w-36 h-8 text-xs">
               <SelectValue placeholder="Season" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Time</SelectItem>
-              {seasons.map(s => (
+              {uniqueSeasons.map(s => (
                 <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
               ))}
             </SelectContent>
@@ -134,16 +141,11 @@ export function Leaderboard() {
                   </td>
                   <td className="p-2 text-right font-mono text-green-400">{(player as any).momAwards ?? 0}</td>
                   <td className="p-2 text-right font-mono text-red-400">{player.muppetAwards}</td>
-                  <td className="p-2 text-right whitespace-nowrap">
-                    <span className={`font-bold font-mono ${player.marketValue >= 5_000_000 ? "text-green-400" : "text-red-400"}`}>
-                      {formatMarketValue(player.marketValue)}
-                    </span>
-                  </td>
                 </tr>
               ))}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-muted-foreground text-sm">
+                  <td colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
                     No squad data yet.
                   </td>
                 </tr>
