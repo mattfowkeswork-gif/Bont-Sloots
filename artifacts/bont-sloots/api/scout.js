@@ -1,3 +1,12 @@
+import pg from "pg";
+
+const { Pool } = pg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
 const STANDINGS_URL = "https://staveley6aside.leaguerepublic.com/standingsForDate/177116197/2/-1/-1.html";
 const FORM_URL = "https://staveley6aside.leaguerepublic.com/teamForm/177116197.html";
 const LR_BASE = "https://staveley6aside.leaguerepublic.com";
@@ -16,6 +25,10 @@ function normaliseName(raw) {
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function overrideKey(opponent) {
+  return `scout_override_${normaliseName(opponent).replace(/\s+/g, "_")}`;
 }
 
 function scoreSimilarity(a, b) {
@@ -108,6 +121,25 @@ export default async function handler(req, res) {
 
     if (!opponentRaw) {
       return res.status(400).json({ error: "opponent required" });
+    }
+
+    const key = overrideKey(opponentRaw);
+    const overrideResult = await pool.query("SELECT value FROM settings WHERE key = $1", [key]);
+
+    if (overrideResult.rows.length > 0) {
+      const saved = JSON.parse(overrideResult.rows[0].value);
+
+      return res.status(200).json({
+        name: saved.name || opponentRaw,
+        rank: Number(saved.rank || 0),
+        gf: Number(saved.gf || 0),
+        ga: Number(saved.ga || 0),
+        form: saved.form || "",
+        verdicts: buildVerdict(Number(saved.rank || 0), Number(saved.ga || 0), Number(saved.gf || 0)),
+        teamUrl: saved.teamUrl || STANDINGS_URL,
+        isOverride: true,
+        notes: saved.notes || ""
+      });
     }
 
     const standings = await scrapeStandings();
