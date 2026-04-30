@@ -55,7 +55,14 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   let goalsQuery = db
     .select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.type, "goal"))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(eq(statsTable.type, "goal"), eq(fixturePlayersTable.present, true)))
     .$dynamic();
   if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
     goalsQuery = goalsQuery.where(and(eq(statsTable.type, "goal"), inArray(statsTable.fixtureId, seasonFixtureIds)) as any);
@@ -66,7 +73,14 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   let assistsQuery = db
     .select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.type, "assist"))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(eq(statsTable.type, "assist"), eq(fixturePlayersTable.present, true)))
     .$dynamic();
   if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
     assistsQuery = assistsQuery.where(and(eq(statsTable.type, "assist"), inArray(statsTable.fixtureId, seasonFixtureIds)) as any);
@@ -77,7 +91,14 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   let cleanSheetsQuery = db
     .select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.type, "clean_sheet"))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(eq(statsTable.type, "clean_sheet"), eq(fixturePlayersTable.present, true)))
     .$dynamic();
   if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
     cleanSheetsQuery = cleanSheetsQuery.where(and(eq(statsTable.type, "clean_sheet"), inArray(statsTable.fixtureId, seasonFixtureIds)) as any);
@@ -88,7 +109,14 @@ router.get("/squad-stats", async (req, res): Promise<void> => {
   let emergencyGkQuery = db
     .select({ playerId: statsTable.playerId, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.type, "emergency_gk"))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(eq(statsTable.type, "emergency_gk"), eq(fixturePlayersTable.present, true)))
     .$dynamic();
   if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
     emergencyGkQuery = emergencyGkQuery.where(and(eq(statsTable.type, "emergency_gk"), inArray(statsTable.fixtureId, seasonFixtureIds)) as any);
@@ -109,33 +137,57 @@ const allFanMotmVotes = await db
   let muppetQuery = db
     .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
     .from(awardsTable)
-    .where(eq(awardsTable.type, "motm"))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(awardsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(awardsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(awardsTable.type, "motm"),
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFixtureIds !== null && seasonFixtureIds.length > 0 ? [inArray(awardsTable.fixtureId, seasonFixtureIds)] : [])
+    ) as any)
     .$dynamic();
-  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
-    muppetQuery = muppetQuery.where(and(eq(awardsTable.type, "motm"), inArray(awardsTable.fixtureId, seasonFixtureIds)) as any);
-  }
   const muppetCounts = await muppetQuery.groupBy(awardsTable.playerId);
 
   // MOM awards
   let momQuery = db
     .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
     .from(awardsTable)
-    .where(eq(awardsTable.type, "mom"))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(awardsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(awardsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(awardsTable.type, "mom"),
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFixtureIds !== null && seasonFixtureIds.length > 0 ? [inArray(awardsTable.fixtureId, seasonFixtureIds)] : [])
+    ) as any)
     .$dynamic();
-  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
-    momQuery = momQuery.where(and(eq(awardsTable.type, "mom"), inArray(awardsTable.fixtureId, seasonFixtureIds)) as any);
-  }
   const momCounts = await momQuery.groupBy(awardsTable.playerId);
 
   // King of the Match award count
   let kingQuery = db
     .select({ playerId: awardsTable.playerId, count: sql<number>`count(*)::int` })
     .from(awardsTable)
-    .where(eq(awardsTable.type, "king"))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(awardsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(awardsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(awardsTable.type, "king"),
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFixtureIds !== null && seasonFixtureIds.length > 0 ? [inArray(awardsTable.fixtureId, seasonFixtureIds)] : [])
+    ) as any)
     .$dynamic();
-  if (seasonFixtureIds !== null && seasonFixtureIds.length > 0) {
-    kingQuery = kingQuery.where(and(eq(awardsTable.type, "king"), inArray(awardsTable.fixtureId, seasonFixtureIds)) as any);
-  }
   const kingCounts = await kingQuery.groupBy(awardsTable.playerId);
 
   // Average match rating
@@ -165,39 +217,98 @@ const allFanMotmVotes = await db
   const valueTotals = await valueQuery.groupBy(playerValueChangesTable.playerId);
 
   // --- Achievement batch queries ---
+  const seasonFilter =
+    seasonFixtureIds !== null && seasonFixtureIds.length > 0
+      ? inArray(statsTable.fixtureId, seasonFixtureIds)
+      : undefined;
+
   // Per-fixture goal counts per player (hat-tricks)
-  const goalsPerFixtureAll = await db
+  let goalsPerFixtureQuery = db
     .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.type, "goal"))
-    .groupBy(statsTable.playerId, statsTable.fixtureId);
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(statsTable.type, "goal"),
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFilter ? [seasonFilter] : [])
+    ) as any)
+    .$dynamic();
+  const goalsPerFixtureAll = await goalsPerFixtureQuery.groupBy(statsTable.playerId, statsTable.fixtureId);
 
   // Per-fixture assist counts per player (Joker)
-  const assistsPerFixtureAll = await db
+  let assistsPerFixtureQuery = db
     .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.type, "assist"))
-    .groupBy(statsTable.playerId, statsTable.fixtureId);
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(statsTable.type, "assist"),
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFilter ? [seasonFilter] : [])
+    ) as any)
+    .$dynamic();
+  const assistsPerFixtureAll = await assistsPerFixtureQuery.groupBy(statsTable.playerId, statsTable.fixtureId);
 
   // Per-fixture clean sheet counts per player (Ghost)
-  const cleanSheetsPerFixtureAll = await db
+  let cleanSheetsPerFixtureQuery = db
     .select({ playerId: statsTable.playerId, fixtureId: statsTable.fixtureId, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.type, "clean_sheet"))
-    .groupBy(statsTable.playerId, statsTable.fixtureId);
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(statsTable.type, "clean_sheet"),
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFilter ? [seasonFilter] : [])
+    ) as any)
+    .$dynamic();
+  const cleanSheetsPerFixtureAll = await cleanSheetsPerFixtureQuery.groupBy(statsTable.playerId, statsTable.fixtureId);
 
   // All appearances with fixture dates (Ghost, Phoenix)
-  const allAppsWithDates = await db
+  let allAppsWithDatesQuery = db
     .select({ playerId: fixturePlayersTable.playerId, fixtureId: fixturePlayersTable.fixtureId, matchDate: fixturesTable.matchDate })
     .from(fixturePlayersTable)
     .innerJoin(fixturesTable, eq(fixturePlayersTable.fixtureId, fixturesTable.id))
-    .where(eq(fixturePlayersTable.present, true));
+    .where(and(
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFixtureIds !== null && seasonFixtureIds.length > 0 ? [inArray(fixturePlayersTable.fixtureId, seasonFixtureIds)] : [])
+    ) as any)
+    .$dynamic();
+  const allAppsWithDates = await allAppsWithDatesQuery;
 
   // Awards with fixture dates (Phoenix, Joker)
-  const allAwardsWithDates = await db
+  let allAwardsWithDatesQuery = db
     .select({ playerId: awardsTable.playerId, fixtureId: awardsTable.fixtureId, type: awardsTable.type, matchDate: fixturesTable.matchDate })
     .from(awardsTable)
-    .innerJoin(fixturesTable, eq(awardsTable.fixtureId, fixturesTable.id));
+    .innerJoin(fixturesTable, eq(awardsTable.fixtureId, fixturesTable.id))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(awardsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(awardsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(fixturePlayersTable.present, true),
+      ...(seasonFixtureIds !== null && seasonFixtureIds.length > 0 ? [inArray(awardsTable.fixtureId, seasonFixtureIds)] : [])
+    ) as any)
+    .$dynamic();
+  const allAwardsWithDates = await allAwardsWithDatesQuery;
   // --- End achievement batch queries ---
 
   // Recent form: last 3 match value changes per player (from player_value_changes, joined with fixtures for date)

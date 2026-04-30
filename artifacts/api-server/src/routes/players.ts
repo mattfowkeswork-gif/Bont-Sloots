@@ -81,7 +81,17 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   const playerStats = await db
     .select({ type: statsTable.type, count: sql<number>`count(*)::int` })
     .from(statsTable)
-    .where(eq(statsTable.playerId, player.id))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(statsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(statsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(statsTable.playerId, player.id),
+      eq(fixturePlayersTable.present, true)
+    ))
     .groupBy(statsTable.type);
 
   const totalGoals = playerStats.find(s => s.type === "goal")?.count ?? 0;
@@ -100,7 +110,17 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     })
     .from(awardsTable)
     .innerJoin(fixturesTable, eq(awardsTable.fixtureId, fixturesTable.id))
-    .where(eq(awardsTable.playerId, player.id))
+    .innerJoin(
+      fixturePlayersTable,
+      and(
+        eq(awardsTable.fixtureId, fixturePlayersTable.fixtureId),
+        eq(awardsTable.playerId, fixturePlayersTable.playerId)
+      )
+    )
+    .where(and(
+      eq(awardsTable.playerId, player.id),
+      eq(fixturePlayersTable.present, true)
+    ))
     .orderBy(awardsTable.createdAt);
 
   const momCount = playerAwards.filter(a => a.type === "mom").length;
@@ -110,7 +130,10 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   const [appsRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(fixturePlayersTable)
-    .where(eq(fixturePlayersTable.playerId, player.id));
+    .where(and(
+      eq(fixturePlayersTable.playerId, player.id),
+      eq(fixturePlayersTable.present, true)
+    ));
   const apps = appsRow?.count ?? 0;
 
 // Fan MOTM wins
