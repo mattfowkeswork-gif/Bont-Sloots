@@ -155,7 +155,26 @@ const nextFixture = nextFixtureRaw
             totalXp: 0
           }
         : null,
-      recentResults: [],
+      recentResults: fixtures
+        .filter(f => f.played)
+        .sort((a, b) => new Date(b.match_date) - new Date(a.match_date))
+        .slice(0, 5)
+        .map(f => ({
+          id: f.id,
+          opponent: f.opponent,
+          matchDate: f.match_date,
+          homeScore: f.home_score,
+          awayScore: f.away_score,
+          isHome: f.is_home,
+          result:
+            f.home_score === null || f.away_score === null
+              ? null
+              : f.home_score > f.away_score
+                ? "W"
+                : f.home_score < f.away_score
+                  ? "L"
+                  : "D"
+        })),
       hallOfFame: {
         topScorer: null,
         topRated: null,
