@@ -7,6 +7,169 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+const XP_VALUES = {
+  appearance: 100,
+  goal: 50,
+  assist: 50,
+  cleanSheetDefGk: 50,
+  cleanSheetMidFwd: 10,
+  mom: 200,
+  muppet: -100,
+};
+
+function isGkOrDef(position) {
+  if (!position) return true;
+  return position === "GK" || position === "DEF";
+}
+
+function xpRequiredForLevel(level) {
+  if (level <= 5) return 500;
+  if (level <= 15) return 1000;
+  if (level <= 30) return 2500;
+  return 5000;
+}
+
+function xpToReachLevel(level) {
+  if (level <= 0) return 0;
+  let total = 0;
+  for (let l = 1; l <= level; l++) total += xpRequiredForLevel(l);
+  return total;
+}
+
+function calculateLevel(progressionXp) {
+  let level = 1;
+  let remaining = progressionXp;
+  while (true) {
+    const cost = xpRequiredForLevel(level + 1);
+    if (remaining < cost) break;
+    remaining -= cost;
+    level++;
+  }
+  return level;
+}
+
+function calculateXp(input) {
+  const csRate = isGkOrDef(input.position)
+    ? XP_VALUES.cleanSheetDefGk
+    : XP_VALUES.cleanSheetMidFwd;
+
+  const xpBreakdown = {
+    appearances: input.apps * XP_VALUES.appearance,
+    goals: input.goals * XP_VALUES.goal,
+    assists: input.assists * XP_VALUES.assist,
+    cleanSheets: input.cleanSheets * csRate,
+    mom: input.momAwards * XP_VALUES.mom,
+    muppet: input.muppetAwards * XP_VALUES.muppet,
+  };
+
+  const baseProgressionXp =
+    xpBreakdown.appearances +
+    xpBreakdown.goals +
+    xpBreakdown.assists +
+    xpBreakdown.cleanSheets +
+    xpBreakdown.mom;
+
+  const achievementBonus = input.achievementXp || 0;
+  const progressionXp = baseProgressionXp + achievementBonus;
+  const totalXp = progressionXp + xpBreakdown.muppet;
+
+  const level = calculateLevel(progressionXp);
+  const xpAtCurrentLevel = xpToReachLevel(level) - xpRequiredForLevel(1);
+
+  return {
+    totalXp,
+    progressionXp,
+    level,
+    xpIntoLevel: progressionXp - xpAtCurrentLevel,
+    xpForNextLevel: xpRequiredForLevel(level + 1),
+    xpBreakdown,
+  };
+}
+
+const ACHIEVEMENT_DEFS = [
+  { id: "first_blood", name: "Sloots Debut", description: "Make your first appearance", icon: "🔥", tier: "basic", xp: 100 },
+  { id: "the_playmaker", name: "The Playmaker", description: "Register your 1st career assist", icon: "🅰️", tier: "basic", xp: 100 },
+  { id: "safe_hands", name: "Safe Hands", description: "Keep your 1st career clean sheet", icon: "🧤", tier: "basic", xp: 100 },
+  { id: "match_fit", name: "Match Fit", description: "Make 5 total career appearances", icon: "🏃", tier: "milestone", xp: 250 },
+  { id: "off_the_mark", name: "Off the Mark", description: "Score your 1st career goal", icon: "🎯", tier: "basic", xp: 150 },
+
+  { id: "the_regular", name: "The Regular", description: "Make 10 career appearances", icon: "🥉", tier: "milestone", xp: 500 },
+  { id: "the_veteran", name: "The Veteran", description: "Make 25 career appearances", icon: "🥈", tier: "milestone", xp: 1250 },
+  { id: "the_stalwart", name: "The Stalwart", description: "Make 75 career appearances", icon: "🥇", tier: "milestone", xp: 3500 },
+  { id: "the_centurion", name: "The Centurion", description: "Make 100 career appearances", icon: "💯", tier: "milestone", xp: 5000 },
+
+  { id: "the_specialist", name: "The Specialist", description: "Score 5 career goals", icon: "⚽", tier: "milestone", xp: 750 },
+  { id: "double_digits", name: "Double Digits", description: "Score 10 career goals", icon: "🔟", tier: "milestone", xp: 750 },
+  { id: "silver_boot", name: "The Silver Boot", description: "Score 25 career goals", icon: "🥈", tier: "milestone", xp: 2000 },
+  { id: "golden_boot", name: "The Golden Boot", description: "Score 50 career goals", icon: "🥇", tier: "milestone", xp: 4500 },
+
+  { id: "the_architect", name: "The Architect", description: "Register 5 career assists", icon: "📐", tier: "milestone", xp: 500 },
+  { id: "helper", name: "Helper", description: "Register 10 career assists", icon: "🤝", tier: "milestone", xp: 750 },
+  { id: "the_maestro", name: "The Maestro", description: "Register 25 career assists", icon: "🎼", tier: "milestone", xp: 2000 },
+  { id: "supply_line", name: "The Supply Line", description: "Register 50 career assists", icon: "🚚", tier: "milestone", xp: 4500 },
+
+  { id: "brick_wall", name: "Brick Wall", description: "Keep 5 career clean sheets", icon: "🛡️", tier: "milestone", xp: 750 },
+  { id: "solid", name: "Solid", description: "Keep 10 career clean sheets", icon: "🧱", tier: "milestone", xp: 750 },
+  { id: "lockdown", name: "The Lockdown", description: "Keep 25 career clean sheets", icon: "🔒", tier: "milestone", xp: 2000 },
+  { id: "great_wall", name: "The Great Wall", description: "Keep 50 career clean sheets", icon: "🏯", tier: "milestone", xp: 4500 },
+
+  { id: "half_centurion", name: "The Half-Centurion", description: "Make 50 total career appearances", icon: "🎖️", tier: "elite", xp: 2500 },
+  { id: "golden_glove", name: "Golden Glove Elite", description: "Keep 20 career clean sheets", icon: "✨", tier: "elite", xp: 2500 },
+  { id: "club_icon", name: "Club Icon", description: "Win 10 Man of the Match awards", icon: "👑", tier: "legendary", xp: 4000 },
+
+  { id: "getting_started", name: "Getting Started", description: "Unlock 5 achievements", icon: "🌱", tier: "meta", xp: 500 },
+  { id: "the_collector", name: "The Collector", description: "Unlock 15 achievements", icon: "🧺", tier: "meta", xp: 1500 },
+];
+
+function computeAchievements(input) {
+  const earned = new Set();
+
+  if (input.apps >= 1) earned.add("first_blood");
+  if (input.assists >= 1) earned.add("the_playmaker");
+  if (input.cleanSheets >= 1) earned.add("safe_hands");
+  if (input.apps >= 5) earned.add("match_fit");
+  if (input.goals >= 1) earned.add("off_the_mark");
+
+  if (input.apps >= 10) earned.add("the_regular");
+  if (input.apps >= 25) earned.add("the_veteran");
+  if (input.apps >= 75) earned.add("the_stalwart");
+  if (input.apps >= 100) earned.add("the_centurion");
+
+  if (input.goals >= 5) earned.add("the_specialist");
+  if (input.goals >= 10) earned.add("double_digits");
+  if (input.goals >= 25) earned.add("silver_boot");
+  if (input.goals >= 50) earned.add("golden_boot");
+
+  if (input.assists >= 5) earned.add("the_architect");
+  if (input.assists >= 10) earned.add("helper");
+  if (input.assists >= 25) earned.add("the_maestro");
+  if (input.assists >= 50) earned.add("supply_line");
+
+  if (input.cleanSheets >= 5) earned.add("brick_wall");
+  if (input.cleanSheets >= 10) earned.add("solid");
+  if (input.cleanSheets >= 20) earned.add("golden_glove");
+  if (input.cleanSheets >= 25) earned.add("lockdown");
+  if (input.cleanSheets >= 50) earned.add("great_wall");
+
+  if (input.apps >= 50) earned.add("half_centurion");
+  if (input.momAwards >= 10) earned.add("club_icon");
+
+  const nonMetaCount = earned.size;
+  if (nonMetaCount >= 5) earned.add("getting_started");
+  if (nonMetaCount >= 15) earned.add("the_collector");
+
+  return ACHIEVEMENT_DEFS.map(def => ({
+    ...def,
+    earned: earned.has(def.id),
+  }));
+}
+
+function totalAchievementXp(achievements) {
+  return achievements
+    .filter(a => a.earned)
+    .reduce((sum, a) => sum + a.xp, 0);
+}
+
 export default async function handler(req, res) {
   try {
     const { id } = req.query;
@@ -43,10 +206,14 @@ export default async function handler(req, res) {
 
     const statsResult = await pool.query(
       `
-      SELECT type, COUNT(*)::int AS count
-      FROM stats
-      WHERE player_id = $1
-      GROUP BY type
+      SELECT s.type, COUNT(*)::int AS count
+      FROM stats s
+      JOIN fixture_players fp
+        ON fp.fixture_id = s.fixture_id
+        AND fp.player_id = s.player_id
+        AND fp.present = true
+      WHERE s.player_id = $1
+      GROUP BY s.type
       `,
       [id]
     );
@@ -57,6 +224,7 @@ export default async function handler(req, res) {
     const totalGoals = getStat("goal");
     const totalAssists = getStat("assist");
     const totalCleanSheets = getStat("clean_sheet");
+    const totalEmergencyGk = getStat("emergency_gk");
 
     const appsResult = await pool.query(
       `
@@ -95,6 +263,10 @@ export default async function handler(req, res) {
         f.opponent AS fixture_opponent
       FROM awards a
       LEFT JOIN fixtures f ON f.id = a.fixture_id
+      JOIN fixture_players fp
+        ON fp.fixture_id = a.fixture_id
+        AND fp.player_id = a.player_id
+        AND fp.present = true
       WHERE a.player_id = $1
       ORDER BY a.created_at ASC
       `,
@@ -159,6 +331,59 @@ export default async function handler(req, res) {
       isKing: false,
     }));
 
+    let xpBonuses = [];
+    try {
+      const bonusResult = await pool.query(
+        `
+        SELECT id, player_id, amount, reason, created_at
+        FROM player_xp_bonuses
+        WHERE player_id = $1
+        ORDER BY created_at DESC
+        `,
+        [id]
+      );
+      xpBonuses = bonusResult.rows;
+    } catch {
+      xpBonuses = [];
+    }
+
+    const manualXpBonus = xpBonuses.reduce((sum, b) => sum + Number(b.amount || 0), 0);
+
+    const baseXp = calculateXp({
+      apps,
+      goals: totalGoals,
+      assists: totalAssists,
+      cleanSheets: totalCleanSheets,
+      momAwards: momCount,
+      muppetAwards: motmCount,
+      position: player.position,
+      achievementXp: manualXpBonus,
+    });
+
+    const achievements = computeAchievements({
+      apps,
+      goals: totalGoals,
+      assists: totalAssists,
+      cleanSheets: totalCleanSheets,
+      momAwards: momCount,
+      muppetAwards: motmCount,
+      baseLevel: baseXp.level,
+      emergencyGkCount: totalEmergencyGk,
+    });
+
+    const achievementXp = totalAchievementXp(achievements);
+
+    const xp = calculateXp({
+      apps,
+      goals: totalGoals,
+      assists: totalAssists,
+      cleanSheets: totalCleanSheets,
+      momAwards: momCount,
+      muppetAwards: motmCount,
+      position: player.position,
+      achievementXp: achievementXp + manualXpBonus,
+    });
+
     return res.status(200).json({
       id: player.id,
       name: player.name,
@@ -181,16 +406,16 @@ export default async function handler(req, res) {
       recentForm: [],
       matchHistory,
       comments: [],
-      totalXp: 0,
-      progressionXp: 0,
-      level: 1,
-      xpIntoLevel: 0,
-      xpForNextLevel: 1000,
-      xpBreakdown: {},
-      achievementXp: 0,
-      manualXpBonus: 0,
-      xpBonuses: [],
-      achievements: [],
+      totalXp: xp.totalXp,
+      progressionXp: xp.progressionXp,
+      level: xp.level,
+      xpIntoLevel: xp.xpIntoLevel,
+      xpForNextLevel: xp.xpForNextLevel,
+      xpBreakdown: xp.xpBreakdown,
+      achievementXp,
+      manualXpBonus,
+      xpBonuses,
+      achievements,
       awardHistory: awardsResult.rows.map(a => ({
         id: a.id,
         playerId: a.player_id,
