@@ -38,7 +38,7 @@ function calculateLevel(progressionXp) {
   return level;
 }
 
-function basicAchievementXp({ apps, goals, assists, cleanSheets, momAwards }) {
+function basicAchievementXp({ apps, goals, assists, cleanSheets, momAwards, emergencyGk }) {
   let xp = 0;
 
   if (apps >= 1) xp += 100;
@@ -70,6 +70,7 @@ function basicAchievementXp({ apps, goals, assists, cleanSheets, momAwards }) {
   if (cleanSheets >= 50) xp += 4500;
 
   if (momAwards >= 10) xp += 4000;
+  if (emergencyGk >= 1) xp += 750;
 
   return xp;
 }
@@ -81,6 +82,7 @@ function calculateXp(row) {
   const cleanSheets = Number(row.clean_sheets || 0);
   const momAwards = Number(row.mom_awards || 0);
   const muppetAwards = Number(row.muppet_awards || 0);
+  const emergencyGk = Number(row.emergency_gk || 0);
 
   const cleanSheetRate = isGkOrDef(row.position) ? 50 : 10;
 
@@ -99,6 +101,7 @@ function calculateXp(row) {
     assists,
     cleanSheets,
     momAwards,
+    emergencyGk,
   });
 
   const progressionXp =
@@ -182,6 +185,7 @@ export default async function handler(req, res) {
         COALESCE(MAX(CASE WHEN sc.type = 'goal' THEN sc.count END), 0)::int AS goals,
         COALESCE(MAX(CASE WHEN sc.type = 'assist' THEN sc.count END), 0)::int AS assists,
         COALESCE(MAX(CASE WHEN sc.type = 'clean_sheet' THEN sc.count END), 0)::int AS clean_sheets,
+        COALESCE(MAX(CASE WHEN sc.type = 'emergency_gk' THEN sc.count END), 0)::int AS emergency_gk,
         COALESCE(MAX(CASE WHEN ac.type = 'mom' THEN ac.count END), 0)::int AS mom_awards,
         COALESCE(MAX(CASE WHEN ac.type = 'motm' THEN ac.count END), 0)::int AS muppet_awards,
         r.avg_rating
