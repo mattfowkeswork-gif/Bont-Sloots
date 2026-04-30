@@ -76,6 +76,17 @@ export default async function handler(req, res) {
       });
     }
 
+    const seasonResult = await pool.query(
+      `
+      SELECT id
+      FROM seasons
+      WHERE is_current = true
+      LIMIT 1
+      `
+    );
+
+    const currentSeasonId = seasonResult.rows[0]?.id ?? null;
+
     const created = [];
 
     for (const fixture of fixtures) {
@@ -95,9 +106,9 @@ export default async function handler(req, res) {
       const inserted = await pool.query(
         `
         INSERT INTO fixtures
-          (opponent, match_date, kickoff_time, kickoff_tbc, is_home, venue, played)
+          (opponent, match_date, kickoff_time, kickoff_tbc, is_home, venue, played, season_id)
         VALUES
-          ($1, $2, $3, $4, $5, $6, false)
+          ($1, $2, $3, $4, $5, $6, false, $7)
         RETURNING *
         `,
         [
@@ -106,7 +117,8 @@ export default async function handler(req, res) {
           fixture.kickoffTime,
           fixture.kickoffTbc,
           fixture.isHome,
-          fixture.venue
+          fixture.venue,
+          currentSeasonId
         ]
       );
 

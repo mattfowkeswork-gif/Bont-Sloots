@@ -26,10 +26,13 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      await pool.query("ALTER TABLE seasons ADD COLUMN IF NOT EXISTS league_name TEXT");
+      await pool.query("ALTER TABLE seasons ADD COLUMN IF NOT EXISTS league_season_name TEXT");
+
       const result = await pool.query(
         `
-        INSERT INTO seasons (name, start_date, end_date, is_current)
-        VALUES ('March - July 2026', '2026-03-01', '2026-07-31', true)
+        INSERT INTO seasons (name, start_date, end_date, is_current, league_name, league_season_name)
+        VALUES ('March - July 2026', '2026-03-22', '2026-07-12', true, 'Staveley 6-a-side', 'Season 21')
         ON CONFLICT DO NOTHING
         RETURNING *
         `
@@ -37,7 +40,12 @@ export default async function handler(req, res) {
 
       await pool.query(`
         UPDATE seasons
-        SET is_current = CASE WHEN name = 'March - July 2026' THEN true ELSE false END
+        SET
+          is_current = CASE WHEN name = 'March - July 2026' THEN true ELSE false END,
+          league_name = CASE WHEN name = 'March - July 2026' THEN 'Staveley 6-a-side' ELSE league_name END,
+          league_season_name = CASE WHEN name = 'March - July 2026' THEN 'Season 21' ELSE league_season_name END,
+          start_date = CASE WHEN name = 'March - July 2026' THEN '2026-03-22' ELSE start_date END,
+          end_date = CASE WHEN name = 'March - July 2026' THEN '2026-07-12' ELSE end_date END
       `);
 
       const seasonResult = await pool.query(`
