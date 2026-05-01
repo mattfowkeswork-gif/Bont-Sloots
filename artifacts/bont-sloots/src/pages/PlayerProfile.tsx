@@ -357,7 +357,7 @@ export function PlayerProfile() {
             />
           </div>
 
-          <div className="grid grid-cols-4 gap-3 w-full mt-5">
+          <div className="grid grid-cols-5 gap-2 w-full mt-5">
             <div className="bg-black/20 border border-white/10 rounded-lg p-2">
               <div className="text-[10px] text-muted-foreground uppercase">Apps</div>
               <div className="text-lg font-black text-white">{player.apps}</div>
@@ -369,6 +369,10 @@ export function PlayerProfile() {
             <div className="bg-black/20 border border-white/10 rounded-lg p-2">
               <div className="text-[10px] text-muted-foreground uppercase">Assists</div>
               <div className="text-lg font-black text-white">{player.totalAssists}</div>
+            </div>
+            <div className="bg-black/20 border border-white/10 rounded-lg p-2">
+              <div className="text-[10px] text-muted-foreground uppercase">CS</div>
+              <div className="text-lg font-black text-emerald-400">{(player as any).totalCleanSheets ?? 0}</div>
             </div>
             <div className="bg-black/20 border border-white/10 rounded-lg p-2">
               <div className="text-[10px] text-muted-foreground uppercase">Rating</div>
@@ -404,31 +408,6 @@ export function PlayerProfile() {
 
           <MilestoneBadges goals={player.totalGoals} apps={player.apps} motmVotes={(player as any).fanMotmCount ?? 0} />
         </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {[
-          { label: "Apps", value: player.apps, color: "text-white" },
-          { label: "Goals", value: player.totalGoals, color: "text-primary" },
-          { label: "Assists", value: player.totalAssists, color: "text-white" },
-          { label: "Fan MOTMs", value: player.motmVotes, color: "text-purple-400" },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-card border border-border/50 rounded-xl p-4 text-center">
-            <div className="text-sm text-muted-foreground uppercase tracking-wider mb-1">{label}</div>
-            <div className={`text-4xl font-black ${color}`}>{value}</div>
-          </div>
-        ))}
-        <div className="col-span-2 bg-card border border-emerald-500/20 rounded-xl p-4 text-center">
-          <div className="text-sm text-muted-foreground uppercase tracking-wider mb-1">Clean Sheets</div>
-          <div className="text-4xl font-black text-emerald-400">{player.totalCleanSheets}</div>
-        </div>
-        {(player as any).avgRating !== null && (player as any).avgRating !== undefined && (
-          <div className="col-span-2 bg-card border border-yellow-500/20 rounded-xl p-4 text-center">
-            <div className="text-sm text-muted-foreground uppercase tracking-wider mb-1">Avg Match Rating</div>
-            <div className="text-4xl font-black text-yellow-400">{Number((player as any).avgRating).toFixed(1)}</div>
-          </div>
-        )}
       </div>
 
       {/* XP & Level */}
