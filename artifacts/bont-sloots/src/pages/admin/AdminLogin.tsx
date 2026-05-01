@@ -27,10 +27,25 @@ export function AdminLogin() {
     },
   });
 
-  const onSubmit = () => {
-  login("fake-token");
-  setLocation("/admin/dashboard");
-};
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+    try {
+      const res = await fetch("/api/fixtures?action=admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: values.password }),
+      });
+
+      if (!res.ok) {
+        toast({ title: "Wrong password", variant: "destructive" });
+        return;
+      }
+
+      login("admin-token");
+      setLocation("/admin/dashboard");
+    } catch {
+      toast({ title: "Login failed", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center py-20">

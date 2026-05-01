@@ -105,6 +105,20 @@ export default async function handler(req, res) {
       return res.status(200).json(status);
     }
 
+    if (req.method === "POST" && action === "admin-login") {
+      const { password } = req.body || {};
+
+      if (!process.env.ADMIN_PASSWORD) {
+        return res.status(500).json({ error: "ADMIN_PASSWORD is not set" });
+      }
+
+      if (password === process.env.ADMIN_PASSWORD) {
+        return res.status(200).json({ ok: true, token: "admin" });
+      }
+
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
     if (req.method === "POST" && action === "backfill-fan-motm") {
       const winners = await pool.query(`
         SELECT DISTINCT ON (fixture_id)
