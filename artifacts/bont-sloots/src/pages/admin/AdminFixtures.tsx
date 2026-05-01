@@ -312,12 +312,15 @@ export function AdminFixtures() {
 
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this fixture?")) {
-      deleteFixture.mutate({ id }, {
-        onSuccess: () => {
+      fetch(`/api/fixtures?id=${id}`, { method: "DELETE" })
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Failed to delete fixture");
           queryClient.invalidateQueries({ queryKey: getListFixturesQueryKey() });
           toast({ title: "Fixture deleted" });
-        }
-      });
+        })
+        .catch(() => {
+          toast({ title: "Failed to delete fixture", variant: "destructive" });
+        });
     }
   };
 
