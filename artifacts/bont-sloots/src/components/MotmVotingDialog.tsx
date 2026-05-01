@@ -4,8 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, CheckCircle2, Clock } from "lucide-react";
-import { useGetVoteStatus, useCastVote, getGetVoteStatusQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+type VoteStatus = {
+  isOpen: boolean;
+  votingClosesAt: string | null;
+  hasVoted: boolean;
+  eligiblePlayers: Array<{ playerId: number; playerName: string; present: boolean }>;
+  results: Array<{ playerId: number; playerName: string; votes: number }>;
+};
 import { formatDistanceToNow } from "date-fns";
 
 function getColorFromName(name: string) {
@@ -39,33 +44,48 @@ interface Props {
 
 export function MotmVotingDialog({ fixtureId, opponent, open, onOpenChange }: Props) {
   const deviceId = getOrCreateDeviceId();
-  const queryClient = useQueryClient();
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   const [voted, setVoted] = useState(false);
+  const [status, setStatus] = useState<VoteStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: status, isLoading } = useGetVoteStatus(
-    fixtureId,
-    { deviceId },
-    { query: { queryKey: getGetVoteStatusQueryKey(fixtureId, { deviceId }), enabled: open } }
-  );
+  useEffect(() => {
+    if (!open) return;
 
-  const castVote = useCastVote();
+    setIsLoading(true);
+    fetch(`/api/fixtures?action=vote-status&fixtureId=${fixtureId}&deviceId=${encodeURIComponent(deviceId)}`)
+      .then(res => res.json())
+      .then(data => setStatus(data))
+      .finally(() => setIsLoading(false));
+  }, [open, fixtureId, deviceId]);
 
   useEffect(() => {
     if (status?.hasVoted) setVoted(true);
   }, [status?.hasVoted]);
 
-  const handleVote = () => {
+  const handleVote = async () => {
     if (!selectedPlayer) return;
-    castVote.mutate(
-      { id: fixtureId, data: { playerId: selectedPlayer, deviceId } },
-      {
-        onSuccess: () => {
-          setVoted(true);
-          queryClient.invalidateQueries({ queryKey: getGetVoteStatusQueryKey(fixtureId, { deviceId }) });
-        },
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/fixtures?action=vote&fixtureId=${fixtureId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId: selectedPlayer, deviceId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to cast vote");
       }
-    );
+
+      setStatus(data);
+      setVoted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const sortedResults = status?.results ? [...status.results].sort((a, b) => b.votes - a.votes) : [];
@@ -172,10 +192,10 @@ export function MotmVotingDialog({ fixtureId, opponent, open, onOpenChange }: Pr
                 </div>
                 <Button
                   onClick={handleVote}
-                  disabled={!selectedPlayer || castVote.isPending}
+                  disabled={!selectedPlayer || isSubmitting}
                   className="w-full"
                 >
-                  {castVote.isPending ? "Submitting..." : "Cast Vote"}
+                  {isSubmitting ? "Submitting..." : "Cast Vote"}
                 </Button>
               </div>
             )}
