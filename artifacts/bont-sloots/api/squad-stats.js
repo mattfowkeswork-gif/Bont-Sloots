@@ -81,6 +81,8 @@ function calculateXp(row) {
   const assists = Number(row.assists || 0);
   const cleanSheets = Number(row.clean_sheets || 0);
   const momAwards = Number(row.mom_awards || 0);
+  const fanMotmAwards = Number(row.fan_motm_awards || 0);
+  const doubleMotmAwards = Number(row.double_motm_awards || 0);
   const muppetAwards = Number(row.muppet_awards || 0);
   const emergencyGk = Number(row.emergency_gk || 0);
 
@@ -92,6 +94,8 @@ function calculateXp(row) {
     assists: assists * 50,
     cleanSheets: cleanSheets * cleanSheetRate,
     mom: momAwards * 200,
+    fanMotm: fanMotmAwards * 200,
+    doubleMotm: doubleMotmAwards * 100,
     muppet: muppetAwards * -100,
   };
 
@@ -110,6 +114,8 @@ function calculateXp(row) {
     xpBreakdown.assists +
     xpBreakdown.cleanSheets +
     xpBreakdown.mom +
+    xpBreakdown.fanMotm +
+    xpBreakdown.doubleMotm +
     achievementXp;
 
   const totalXp = progressionXp + xpBreakdown.muppet;
@@ -187,12 +193,24 @@ export default async function handler(req, res) {
         COALESCE(MAX(CASE WHEN sc.type = 'clean_sheet' THEN sc.count END), 0)::int AS clean_sheets,
         COALESCE(MAX(CASE WHEN sc.type = 'emergency_gk' THEN sc.count END), 0)::int AS emergency_gk,
         COALESCE(MAX(CASE WHEN ac.type = 'mom' THEN ac.count END), 0)::int AS mom_awards,
+        COALESCE(MAX(CASE WHEN ac.type = 'fan_motm' THEN ac.count END), 0)::int AS fan_motm_awards,
         COALESCE(MAX(CASE WHEN ac.type = 'motm' THEN ac.count END), 0)::int AS muppet_awards,
-        r.avg_rating
+        COALESCE(dm.double_motm_awards, 0)::int AS double_motm_awards,
+        r.avg_rating, dm.double_motm_awards
       FROM players p
       LEFT JOIN present_apps pa ON pa.player_id = p.id
       LEFT JOIN stat_counts sc ON sc.player_id = p.id
       LEFT JOIN award_counts ac ON ac.player_id = p.id
+      LEFT JOIN (
+        SELECT fm.player_id, COUNT(*)::int AS double_motm_awards
+        FROM awards fm
+        JOIN awards m
+          ON m.fixture_id = fm.fixture_id
+          AND m.player_id = fm.player_id
+          AND m.type = 'mom'
+        WHERE fm.type = 'fan_motm'
+        GROUP BY fm.player_id
+      ) dm ON dm.player_id = p.id
       LEFT JOIN ratings r ON r.player_id = p.id
       GROUP BY
         p.id,
@@ -202,7 +220,7 @@ export default async function handler(req, res) {
         p.scouting_profile,
         p.photo_url,
         pa.apps,
-        r.avg_rating
+        r.avg_rating, dm.double_motm_awards
     `, [seasonId]);
 
     const players = result.rows.map(p => {
@@ -221,6 +239,8 @@ export default async function handler(req, res) {
         cleanSheets: Number(p.clean_sheets || 0),
         motmVotes: 0,
         momAwards: Number(p.mom_awards || 0),
+        fanMotmAwards: Number(p.fan_motm_awards || 0),
+        doubleMotmAwards: Number(p.double_motm_awards || 0),
         muppetAwards: Number(p.muppet_awards || 0),
         marketValue: 5000000,
         avgRating: p.avg_rating === null ? null : Number(p.avg_rating),

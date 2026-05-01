@@ -112,6 +112,27 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "fixtureId is required" });
       }
 
+      const winnerResult = await pool.query(`
+        SELECT player_id, COUNT(*)::int AS votes
+        FROM motm_votes
+        WHERE fixture_id = $1
+        GROUP BY player_id
+        ORDER BY votes DESC, player_id ASC
+        LIMIT 1
+      `, [fixtureId]);
+
+      await pool.query(
+        `DELETE FROM awards WHERE fixture_id = $1 AND type = 'fan_motm'`,
+        [fixtureId]
+      );
+
+      if (winnerResult.rows[0]) {
+        await pool.query(`
+          INSERT INTO awards (fixture_id, player_id, type)
+          VALUES ($1, $2, 'fan_motm')
+        `, [fixtureId, winnerResult.rows[0].player_id]);
+      }
+
       const result = await pool.query(`
         UPDATE fixtures
         SET voting_closes_at = NOW()
@@ -123,7 +144,10 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: "Fixture not found" });
       }
 
-      return res.status(200).json(mapFixture(result.rows[0]));
+      return res.status(200).json({
+        ...mapFixture(result.rows[0]),
+        fanMotmWinnerPlayerId: winnerResult.rows[0]?.player_id ?? null,
+      });
     }
 
     if (req.method === "POST" && action === "vote") {

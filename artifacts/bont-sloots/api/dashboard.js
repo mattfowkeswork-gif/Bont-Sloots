@@ -86,6 +86,8 @@ function calculatePlayerDashboardXp(row) {
   const assists = Number(row.assists || 0);
   const cleanSheets = Number(row.clean_sheets || 0);
   const momAwards = Number(row.mom_awards || 0);
+  const fanMotmAwards = Number(row.fan_motm_awards || 0);
+  const doubleMotmAwards = Number(row.double_motm_awards || 0);
   const muppetAwards = Number(row.muppet_awards || 0);
   const emergencyGk = Number(row.emergency_gk || 0);
 
@@ -261,6 +263,16 @@ export default async function handler(req, res) {
       LEFT JOIN present_apps pa ON pa.player_id = p.id
       LEFT JOIN stat_counts sc ON sc.player_id = p.id
       LEFT JOIN award_counts ac ON ac.player_id = p.id
+      LEFT JOIN (
+        SELECT fm.player_id, COUNT(*)::int AS double_motm_awards
+        FROM awards fm
+        JOIN awards m
+          ON m.fixture_id = fm.fixture_id
+          AND m.player_id = fm.player_id
+          AND m.type = 'mom'
+        WHERE fm.type = 'fan_motm'
+        GROUP BY fm.player_id
+      ) dm ON dm.player_id = p.id
       GROUP BY p.id, p.name, p.display_name, p.position, pa.apps
     `);
 

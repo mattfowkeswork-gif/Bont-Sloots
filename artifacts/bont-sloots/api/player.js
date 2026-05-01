@@ -59,6 +59,8 @@ function calculateXp(input) {
     assists: input.assists * XP_VALUES.assist,
     cleanSheets: input.cleanSheets * csRate,
     mom: input.momAwards * XP_VALUES.mom,
+    fanMotm: (input.fanMotmAwards || 0) * XP_VALUES.mom,
+    doubleMotm: (input.doubleMotmAwards || 0) * 100,
     muppet: input.muppetAwards * XP_VALUES.muppet,
   };
 
@@ -67,7 +69,9 @@ function calculateXp(input) {
     xpBreakdown.goals +
     xpBreakdown.assists +
     xpBreakdown.cleanSheets +
-    xpBreakdown.mom;
+    xpBreakdown.mom +
+    xpBreakdown.fanMotm +
+    xpBreakdown.doubleMotm;
 
   const achievementBonus = input.achievementXp || 0;
   const progressionXp = baseProgressionXp + achievementBonus;
@@ -290,7 +294,12 @@ export default async function handler(req, res) {
     );
 
     const momCount = awardsResult.rows.filter(a => a.type === "mom").length;
+    const fanMotmCount = awardsResult.rows.filter(a => a.type === "fan_motm").length;
     const motmCount = awardsResult.rows.filter(a => a.type === "motm").length;
+
+    const momFixtureIds = new Set(awardsResult.rows.filter(a => a.type === "mom").map(a => a.fixture_id));
+    const fanMotmFixtureIds = new Set(awardsResult.rows.filter(a => a.type === "fan_motm").map(a => a.fixture_id));
+    const doubleMotmCount = [...fanMotmFixtureIds].filter(fid => momFixtureIds.has(fid)).length;
 
     const historyResult = await pool.query(
       `
@@ -370,7 +379,7 @@ export default async function handler(req, res) {
       goals: totalGoals,
       assists: totalAssists,
       cleanSheets: totalCleanSheets,
-      momAwards: momCount,
+      momAwards: momCount, fanMotmAwards: fanMotmCount, doubleMotmAwards: doubleMotmCount,
       muppetAwards: motmCount,
       position: player.position,
       achievementXp: manualXpBonus,
@@ -381,7 +390,7 @@ export default async function handler(req, res) {
       goals: totalGoals,
       assists: totalAssists,
       cleanSheets: totalCleanSheets,
-      momAwards: momCount,
+      momAwards: momCount, fanMotmAwards: fanMotmCount, doubleMotmAwards: doubleMotmCount,
       muppetAwards: motmCount,
       baseLevel: baseXp.level,
       emergencyGkCount: totalEmergencyGk,
@@ -394,7 +403,7 @@ export default async function handler(req, res) {
       goals: totalGoals,
       assists: totalAssists,
       cleanSheets: totalCleanSheets,
-      momAwards: momCount,
+      momAwards: momCount, fanMotmAwards: fanMotmCount, doubleMotmAwards: doubleMotmCount,
       muppetAwards: motmCount,
       position: player.position,
       achievementXp: achievementXp + manualXpBonus,
@@ -413,6 +422,8 @@ export default async function handler(req, res) {
       totalAssists,
       totalCleanSheets,
       momCount,
+      fanMotmCount,
+      doubleMotmCount,
       motmCount,
       motmVotes: 0,
       isKing: false,
