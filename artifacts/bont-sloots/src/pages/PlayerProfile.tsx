@@ -325,7 +325,6 @@ export function PlayerProfile() {
         )}
 
         <div className="relative flex flex-col items-center text-center">
-          {/* Jersey Circle avatar */}
           <JerseyCircle
             name={player.name}
             position={player.position}
@@ -334,16 +333,76 @@ export function PlayerProfile() {
             className="mb-4"
           />
 
-          <h1 className="text-2xl font-black text-white">{(player as any).displayName ?? player.name}</h1>
-          <div className="text-primary font-medium mt-1">{player.position || "Squad Player"}</div>
+          <h1 className="text-3xl font-black text-white leading-tight">{(player as any).displayName ?? player.name}</h1>
 
-          {/* Market Value + Trend */}
-          <div className="flex items-center gap-2 mt-3">
-            <span className={`text-2xl font-black ${mvColor}`}>{formatValue(player.marketValue)}</span>
-            <TrendIcon form={player.recentForm} />
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-primary font-bold">{player.position || "Squad Player"}</span>
+            <span className="text-muted-foreground">•</span>
+            <span className={`font-black ${getLevelColor((player as any).level ?? 1)}`}>
+              LVL {(player as any).level ?? 1}
+            </span>
           </div>
 
-          <MilestoneBadges goals={player.totalGoals} apps={player.apps} motmVotes={player.motmCount} />
+          {(player as any).scoutingProfile && (
+            <p className="text-sm text-muted-foreground mt-4 italic leading-relaxed max-w-sm">
+              “{(player as any).scoutingProfile}”
+            </p>
+          )}
+
+          <div className="w-full max-w-xs mt-5">
+            <XpProgressBar
+              xpIntoLevel={(player as any).xpIntoLevel ?? 0}
+              xpForNextLevel={(player as any).xpForNextLevel ?? 500}
+              level={(player as any).level ?? 1}
+            />
+          </div>
+
+          <div className="grid grid-cols-4 gap-3 w-full mt-5">
+            <div className="bg-black/20 border border-white/10 rounded-lg p-2">
+              <div className="text-[10px] text-muted-foreground uppercase">Apps</div>
+              <div className="text-lg font-black text-white">{player.apps}</div>
+            </div>
+            <div className="bg-black/20 border border-white/10 rounded-lg p-2">
+              <div className="text-[10px] text-muted-foreground uppercase">Goals</div>
+              <div className="text-lg font-black text-primary">{player.totalGoals}</div>
+            </div>
+            <div className="bg-black/20 border border-white/10 rounded-lg p-2">
+              <div className="text-[10px] text-muted-foreground uppercase">Assists</div>
+              <div className="text-lg font-black text-white">{player.totalAssists}</div>
+            </div>
+            <div className="bg-black/20 border border-white/10 rounded-lg p-2">
+              <div className="text-[10px] text-muted-foreground uppercase">Rating</div>
+              <div className="text-lg font-black text-yellow-400">
+                {(player as any).avgRating ? Number((player as any).avgRating).toFixed(1) : "-"}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2 mt-4 text-xs">
+            <span className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-bold">
+              🏆 {((player as any).achievements ?? []).filter((a: any) => a.earned).length} achievements
+            </span>
+
+            {((player as any).fanMotmCount ?? 0) > 0 && (
+              <span className="bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2.5 py-1 rounded-full font-bold">
+                🔥 {(player as any).fanMotmCount} Fan MOTM
+              </span>
+            )}
+
+            {((player as any).doubleMotmCount ?? 0) > 0 && (
+              <span className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 px-2.5 py-1 rounded-full font-bold">
+                ⭐ Double MOTM
+              </span>
+            )}
+
+            {(player as any).isKing && (
+              <span className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-bold">
+                👑 King
+              </span>
+            )}
+          </div>
+
+          <MilestoneBadges goals={player.totalGoals} apps={player.apps} motmVotes={(player as any).fanMotmCount ?? 0} />
         </div>
       </div>
 
