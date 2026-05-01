@@ -105,6 +105,36 @@ export default async function handler(req, res) {
       return res.status(200).json(status);
     }
 
+    if (req.method === "POST" && action === "backfill-fan-motm") {
+      const winners = await pool.query(`
+        SELECT DISTINCT ON (fixture_id)
+          fixture_id,
+          player_id,
+          COUNT(*)::int AS votes
+        FROM motm_votes
+        GROUP BY fixture_id, player_id
+        ORDER BY fixture_id, votes DESC, player_id ASC
+      `);
+
+      let created = 0;
+
+      for (const winner of winners.rows) {
+        await pool.query(
+          `DELETE FROM awards WHERE fixture_id = $1 AND type = 'fan_motm'`,
+          [winner.fixture_id]
+        );
+
+        await pool.query(
+          `INSERT INTO awards (fixture_id, player_id, type) VALUES ($1, $2, 'fan_motm')`,
+          [winner.fixture_id, winner.player_id]
+        );
+
+        created++;
+      }
+
+      return res.status(200).json({ ok: true, fanMotmAwardsCreated: created });
+    }
+
     if (req.method === "POST" && action === "close-voting") {
       const fixtureId = Number(req.query.fixtureId);
 
