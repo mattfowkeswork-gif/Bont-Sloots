@@ -105,6 +105,27 @@ export default async function handler(req, res) {
       return res.status(200).json(status);
     }
 
+    if (req.method === "POST" && action === "close-voting") {
+      const fixtureId = Number(req.query.fixtureId);
+
+      if (!fixtureId) {
+        return res.status(400).json({ error: "fixtureId is required" });
+      }
+
+      const result = await pool.query(`
+        UPDATE fixtures
+        SET voting_closes_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `, [fixtureId]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Fixture not found" });
+      }
+
+      return res.status(200).json(mapFixture(result.rows[0]));
+    }
+
     if (req.method === "POST" && action === "vote") {
       const fixtureId = Number(req.query.fixtureId);
       const { playerId, deviceId } = req.body || {};

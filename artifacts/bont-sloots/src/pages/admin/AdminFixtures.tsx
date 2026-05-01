@@ -251,7 +251,7 @@ export function AdminFixtures() {
 
   const closeVoting = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`/api/fixtures/${id}/close-voting`, { method: "POST" });
+      const res = await fetch(`/api/fixtures?action=close-voting&fixtureId=${id}`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to close voting");
       return res.json();
     },
