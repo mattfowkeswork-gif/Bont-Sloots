@@ -152,11 +152,6 @@ export function Squad() {
                   {player.isMuppet && <span className="ml-1 text-[8px] text-red-400 font-bold">🤡</span>}
                 </div>
 
-                {/* Market value */}
-                <div className={`font-black text-sm ${mvColor} mb-1`}>
-                  {formatValue(mv)}
-                </div>
-
                 {/* Level badge */}
                 <div className="flex items-center gap-1 mb-2">
                   <span className="inline-flex items-center gap-0.5 text-[9px] font-black px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-primary">
@@ -166,24 +161,42 @@ export function Squad() {
                   <span className="text-[8px] text-muted-foreground font-mono">{(player as any).totalXp ?? 0} XP</span>
                 </div>
 
-                {/* Stats */}
-                <div className="w-full grid grid-cols-3 gap-1 text-[10px] border-t border-white/10 pt-2 mt-auto">
-                  <div className="flex flex-col items-center">
-                    <span className="text-muted-foreground">Gls</span>
-                    <span className="font-mono font-bold text-primary">{player.goals}</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-muted-foreground">Apps</span>
-                    <span className="font-mono font-bold text-white">{player.apps}</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-muted-foreground">MOTM</span>
-                    <span className="font-mono font-bold text-purple-400">{player.motmVotes}</span>
+                {/* XP progress */}
+                <div className="w-full mb-3">
+                  <div className="h-1.5 bg-border/50 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, (((player as any).xpIntoLevel ?? 0) / ((player as any).xpForNextLevel || 500)) * 100))}%`
+                      }}
+                    />
                   </div>
                 </div>
 
-                {/* Milestone badges */}
-                <MilestoneBadges goals={player.goals} apps={player.apps} motmVotes={player.motmVotes} />
+                {/* Stats */}
+                <div className="w-full grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] border-t border-white/10 pt-2 mt-auto">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Apps</span>
+                    <span className="font-mono font-bold text-white">{player.apps}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Goals</span>
+                    <span className="font-mono font-bold text-primary">{player.goals}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Assists</span>
+                    <span className="font-mono font-bold text-white">{player.assists}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Rating</span>
+                    <span className="font-mono font-bold text-yellow-400">{player.avgRating ? Number(player.avgRating).toFixed(1) : "-"}</span>
+                  </div>
+                </div>
+
+                {/* Achievements */}
+                <div className="mt-2 text-[9px] text-muted-foreground">
+                  🏆 {(player as any).achievementCount ?? 0} achievements unlocked
+                </div>
               </div>
             </Link>
           );
