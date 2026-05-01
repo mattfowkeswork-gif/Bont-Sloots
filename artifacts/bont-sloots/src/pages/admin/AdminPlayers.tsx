@@ -86,9 +86,9 @@ export function AdminPlayers() {
   const { data: players, isLoading } = useListPlayers({
     query: { queryKey: getListPlayersQueryKey() }
   });
-  const createPlayer = useCreatePlayer();
-  const updatePlayer = useUpdatePlayer();
-  const deletePlayer = useDeletePlayer();
+  const createPlayer = { isPending: false };
+  const updatePlayer = { isPending: false };
+  const deletePlayer = { mutate: async (_args: any, _opts: any) => {} };
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -99,19 +99,22 @@ export function AdminPlayers() {
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    createPlayer.mutate({
-      data: {
+    fetch("/api/players", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name: formData.get("name") as string,
         displayName: (formData.get("displayName") as string) || null,
         position: (formData.get("position") as string) || null,
         scoutingProfile: (formData.get("scoutingProfile") as string) || null,
-      }
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListPlayersQueryKey() });
-        setIsCreateOpen(false);
-        toast({ title: "Player created" });
-      }
+      }),
+    }).then(async (res) => {
+      if (!res.ok) throw new Error("Failed to create player");
+      queryClient.invalidateQueries({ queryKey: getListPlayersQueryKey() });
+      setIsCreateOpen(false);
+      toast({ title: "Player created" });
+    }).catch(() => {
+      toast({ title: "Failed to create player", variant: "destructive" });
     });
   };
 
@@ -119,31 +122,36 @@ export function AdminPlayers() {
     e.preventDefault();
     if (!editingPlayer) return;
     const formData = new FormData(e.currentTarget);
-    updatePlayer.mutate({
-      id: editingPlayer.id,
-      data: {
+    fetch(`/api/players?id=${editingPlayer.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name: formData.get("name") as string,
         displayName: (formData.get("displayName") as string) || null,
         position: (formData.get("position") as string) || null,
         scoutingProfile: (formData.get("scoutingProfile") as string) || null,
-      }
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListPlayersQueryKey() });
-        setEditingPlayer(null);
-        toast({ title: "Player updated" });
-      }
+      }),
+    }).then(async (res) => {
+      if (!res.ok) throw new Error("Failed to update player");
+      queryClient.invalidateQueries({ queryKey: getListPlayersQueryKey() });
+      setEditingPlayer(null);
+      toast({ title: "Player updated" });
+    }).catch(() => {
+      toast({ title: "Failed to update player", variant: "destructive" });
     });
   };
 
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this player?")) {
-      deletePlayer.mutate({ id }, {
-        onSuccess: () => {
+      fetch(`/api/players?id=${id}`, { method: "DELETE" })
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Failed to delete player");
           queryClient.invalidateQueries({ queryKey: getListPlayersQueryKey() });
           toast({ title: "Player deleted" });
-        }
-      });
+        })
+        .catch(() => {
+          toast({ title: "Failed to delete player", variant: "destructive" });
+        });
     }
   };
 
