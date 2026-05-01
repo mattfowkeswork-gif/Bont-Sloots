@@ -38,6 +38,43 @@ function calculateLevel(progressionXp) {
   return level;
 }
 
+function basicAchievementCount({ apps, goals, assists, cleanSheets, momAwards, emergencyGk }) {
+  let count = 0;
+
+  if (apps >= 1) count++;
+  if (assists >= 1) count++;
+  if (cleanSheets >= 1) count++;
+  if (apps >= 5) count++;
+  if (goals >= 1) count++;
+
+  if (apps >= 10) count++;
+  if (apps >= 25) count++;
+  if (apps >= 50) count++;
+  if (apps >= 75) count++;
+  if (apps >= 100) count++;
+
+  if (goals >= 5) count++;
+  if (goals >= 10) count++;
+  if (goals >= 25) count++;
+  if (goals >= 50) count++;
+
+  if (assists >= 5) count++;
+  if (assists >= 10) count++;
+  if (assists >= 25) count++;
+  if (assists >= 50) count++;
+
+  if (cleanSheets >= 5) count++;
+  if (cleanSheets >= 10) count++;
+  if (cleanSheets >= 20) count++;
+  if (cleanSheets >= 25) count++;
+  if (cleanSheets >= 50) count++;
+
+  if (momAwards >= 10) count++;
+  if (emergencyGk >= 1) count++;
+
+  return count;
+}
+
 function basicAchievementXp({ apps, goals, assists, cleanSheets, momAwards, emergencyGk }) {
   let xp = 0;
 
@@ -108,6 +145,15 @@ function calculateXp(row) {
     emergencyGk,
   });
 
+  const achievementCount = basicAchievementCount({
+    apps,
+    goals,
+    assists,
+    cleanSheets,
+    momAwards,
+    emergencyGk,
+  });
+
   const progressionXp =
     xpBreakdown.appearances +
     xpBreakdown.goals +
@@ -130,6 +176,7 @@ function calculateXp(row) {
     xpForNextLevel: xpRequiredForLevel(level + 1),
     xpBreakdown,
     achievementXp,
+    achievementCount,
   };
 }
 
@@ -255,7 +302,7 @@ export default async function handler(req, res) {
         xpForNextLevel: xp.xpForNextLevel,
         xpBreakdown: xp.xpBreakdown,
         achievementXp: xp.achievementXp,
-        achievementCount: 0
+        achievementCount: xp.achievementCount
       };
     });
 
