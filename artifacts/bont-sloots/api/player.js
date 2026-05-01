@@ -297,6 +297,17 @@ export default async function handler(req, res) {
     const fanMotmCount = awardsResult.rows.filter(a => a.type === "fan_motm").length;
     const motmCount = awardsResult.rows.filter(a => a.type === "motm").length;
 
+    const fanVotesResult = await pool.query(
+      `
+      SELECT COUNT(*)::int AS count
+      FROM motm_votes
+      WHERE player_id = $1
+      `,
+      [id]
+    );
+
+    const fanVoteCount = Number(fanVotesResult.rows[0]?.count || 0);
+
     const momFixtureIds = new Set(awardsResult.rows.filter(a => a.type === "mom").map(a => a.fixture_id));
     const fanMotmFixtureIds = new Set(awardsResult.rows.filter(a => a.type === "fan_motm").map(a => a.fixture_id));
     const doubleMotmCount = [...fanMotmFixtureIds].filter(fid => momFixtureIds.has(fid)).length;
@@ -425,7 +436,7 @@ export default async function handler(req, res) {
       fanMotmCount,
       doubleMotmCount,
       motmCount,
-      motmVotes: fanMotmCount,
+      motmVotes: fanVoteCount,
       isKing: false,
       apps,
       marketValue: 5000000,
