@@ -403,6 +403,8 @@ export function PlayerProfile() {
                 {(player as any).xpBreakdown.assists > 0 && <span className="flex justify-between"><span>Assists</span><span className="text-white font-mono">+{(player as any).xpBreakdown.assists}</span></span>}
                 {(player as any).xpBreakdown.cleanSheets > 0 && <span className="flex justify-between"><span>Clean Sheets</span><span className="text-emerald-400 font-mono">+{(player as any).xpBreakdown.cleanSheets}</span></span>}
                 {(player as any).xpBreakdown.mom > 0 && <span className="flex justify-between"><span>Man of Match</span><span className="text-yellow-400 font-mono">+{(player as any).xpBreakdown.mom}</span></span>}
+                {(player as any).xpBreakdown.fanMotm > 0 && <span className="flex justify-between"><span>Fan MOTM</span><span className="text-purple-400 font-mono">+{(player as any).xpBreakdown.fanMotm}</span></span>}
+                {(player as any).xpBreakdown.doubleMotm > 0 && <span className="flex justify-between"><span>Double MOTM Bonus</span><span className="text-yellow-300 font-mono">+{(player as any).xpBreakdown.doubleMotm}</span></span>}
                 {(player as any).xpBreakdown.muppet < 0 && <span className="flex justify-between"><span>Muppet Awards</span><span className="text-red-400 font-mono">{(player as any).xpBreakdown.muppet}</span></span>}
                 {((player as any).achievementXp ?? 0) > 0 && <span className="flex justify-between col-span-2"><span>🏆 Achievements</span><span className="text-yellow-400 font-mono">+{(player as any).achievementXp}</span></span>}
               </div>

@@ -425,7 +425,7 @@ export default async function handler(req, res) {
       fanMotmCount,
       doubleMotmCount,
       motmCount,
-      motmVotes: 0,
+      motmVotes: fanMotmCount,
       isKing: false,
       apps,
       marketValue: 5000000,
