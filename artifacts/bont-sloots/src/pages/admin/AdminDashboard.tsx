@@ -9,7 +9,6 @@ import { AdminPlayers } from "./AdminPlayers";
 import { AdminStats } from "./AdminStats";
 import { AdminAwards } from "./AdminAwards";
 import { AdminBulkFixtures } from "./AdminBulkFixtures";
-import { AdminSettings } from "./AdminSettings";
 import { AdminScout } from "./AdminScout";
 
 export function AdminDashboard() {
@@ -49,7 +48,6 @@ export function AdminDashboard() {
             <TabsTrigger value="players" className="py-2 px-3 text-xs">Players</TabsTrigger>
             <TabsTrigger value="stats" className="py-2 px-3 text-xs">Stats</TabsTrigger>
             <TabsTrigger value="awards" className="py-2 px-3 text-xs">Awards</TabsTrigger>
-            <TabsTrigger value="settings" className="py-2 px-3 text-xs">Settings</TabsTrigger>
             <TabsTrigger value="scout" className="py-2 px-3 text-xs">Scout</TabsTrigger>
           </TabsList>
         </div>
@@ -67,9 +65,6 @@ export function AdminDashboard() {
         </TabsContent>
         <TabsContent value="awards" className="mt-0">
           <AdminAwards />
-        </TabsContent>
-        <TabsContent value="settings" className="mt-0">
-          <AdminSettings />
         </TabsContent>
         <TabsContent value="scout" className="mt-0">
           <AdminScout />

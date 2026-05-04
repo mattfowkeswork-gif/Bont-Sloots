@@ -154,10 +154,12 @@ export function AdminStats() {
         body: JSON.stringify({ amount, reason: bonusReason.trim() }),
       });
       if (!res.ok) throw new Error("Failed");
-      toast({ title: `+${amount} XP bonus awarded ⭐` });
+      const playerName = players?.find(p => p.id.toString() === bonusPlayerId)?.name ?? "Player";
+      toast({ title: `+${amount} XP awarded to ${playerName} ⭐` });
       queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetPlayerQueryKey(Number(bonusPlayerId)) });
+      setBonusPlayerId("");
       setBonusAmount("");
       setBonusReason("");
     } catch {
@@ -274,7 +276,7 @@ export function AdminStats() {
               ⭐ Manual XP Bonus
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Gift XP to a player and leave a commendation that appears on their profile.
+              Award one-off bonus XP to a player. This appears in their XP total immediately.
             </p>
           </CardHeader>
           <CardContent className="p-4 pt-0 space-y-4">
@@ -292,7 +294,7 @@ export function AdminStats() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Manual XP Bonus</Label>
+              <Label>XP Amount</Label>
               <Input
                 type="number"
                 min={1}
@@ -305,7 +307,7 @@ export function AdminStats() {
               <Label>Bonus Reason</Label>
               <Input
                 type="text"
-                placeholder="e.g. Top effort in training"
+                placeholder="e.g. Match-winning performance"
                 value={bonusReason}
                 onChange={e => setBonusReason(e.target.value)}
               />

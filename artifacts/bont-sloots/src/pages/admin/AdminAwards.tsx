@@ -1,4 +1,4 @@
-import { useListFixtures, useListPlayers, useCreateAward, useDeleteAward, useListAwards, getListStatsQueryKey, getGetDashboardQueryKey, getListAwardsQueryKey } from "@workspace/api-client-react";
+import { useListFixtures, useCreateAward, useDeleteAward, useListAwards, useGetFixturePlayers, getListStatsQueryKey, getGetDashboardQueryKey, getListAwardsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,6 @@ import { useState } from "react";
 
 export function AdminAwards() {
   const { data: fixtures } = useListFixtures();
-  const { data: players } = useListPlayers();
   const { data: awards } = useListAwards();
   const createAward = useCreateAward();
   const deleteAward = useDeleteAward();
@@ -21,6 +20,11 @@ export function AdminAwards() {
   const [playerId, setPlayerId] = useState<string>("");
 
   const playedFixtures = fixtures?.filter(f => f.played) || [];
+  const { data: fixturePlayers } = useGetFixturePlayers(
+    fixtureId ? Number(fixtureId) : 0,
+    { query: { queryKey: ["award-fixture-players", fixtureId], enabled: !!fixtureId } }
+  );
+  const presentPlayers = fixturePlayers?.filter(fp => fp.present) ?? [];
 
   const muppetAwards = awards?.filter(a => a.type === "motm") || [];
 
@@ -46,7 +50,6 @@ export function AdminAwards() {
       onSuccess: () => {
         toast({ title: "Muppet of the Match awarded" });
         invalidate();
-        setFixtureId("");
         setPlayerId("");
       }
     });
@@ -95,12 +98,12 @@ export function AdminAwards() {
               <Label>Select Player</Label>
               <Select value={playerId} onValueChange={setPlayerId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select player" />
+                  <SelectValue placeholder={fixtureId ? "Select player from this fixture" : "Select fixture first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {players?.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>
-                      {p.name}
+                  {presentPlayers.map(p => (
+                    <SelectItem key={p.playerId} value={p.playerId.toString()}>
+                      {p.playerName}
                     </SelectItem>
                   ))}
                 </SelectContent>
