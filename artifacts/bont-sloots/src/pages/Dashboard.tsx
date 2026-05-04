@@ -480,18 +480,18 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-white">
-              {dashboard.seasonRecord.wins}
+              {(dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).wins}
               <span className="text-emerald-400 text-base mx-1">W</span>
-              {dashboard.seasonRecord.draws}
+              {(dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).draws}
               <span className="text-yellow-400 text-base mx-1">D</span>
-              {dashboard.seasonRecord.losses}
+              {(dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).losses}
               <span className="text-red-400 text-base mx-1">L</span>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
-              GD <span className={(dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst) >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
-                {dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst > 0 ? "+" : ""}{dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst}
+              GD <span className={((dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsFor - (dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsAgainst) >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+                {(dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsFor - (dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsAgainst > 0 ? "+" : ""}{(dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsFor - (dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsAgainst}
               </span>
-              <span className="ml-1">({dashboard.seasonRecord.goalsFor}F / {dashboard.seasonRecord.goalsAgainst}A)</span>
+              <span className="ml-1">({(dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsFor}F / {(dashboard.seasonRecord ?? { wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }).goalsAgainst}A)</span>
             </div>
           </CardContent>
         </Card>

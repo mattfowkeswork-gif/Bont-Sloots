@@ -141,7 +141,7 @@ export function AdminStats() {
   };
 
   const handleSaveBonus = async () => {
-    const amount = parseInt(bonusAmount);
+    const amount = Number(bonusAmount);
     if (!bonusPlayerId || isNaN(amount) || amount <= 0 || !bonusReason.trim()) {
       toast({ title: "Please fill in all fields with valid values", variant: "destructive" });
       return;
@@ -153,7 +153,11 @@ export function AdminStats() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount, reason: bonusReason.trim() }),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+  const text = await res.text();
+  console.error("XP BONUS ERROR:", text);
+  throw new Error(text || "Failed");
+}
       const playerName = players?.find(p => p.id.toString() === bonusPlayerId)?.name ?? "Player";
       toast({ title: `+${amount} XP awarded to ${playerName} ⭐` });
       queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });

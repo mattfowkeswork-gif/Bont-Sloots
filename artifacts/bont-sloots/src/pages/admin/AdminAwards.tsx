@@ -34,25 +34,35 @@ export function AdminAwards() {
     queryClient.invalidateQueries({ queryKey: getListAwardsQueryKey() });
   };
 
-  const handleAddAward = () => {
+  const handleAddAward = async () => {
     if (!fixtureId || !playerId) {
       toast({ title: "Please select both fixture and player", variant: "destructive" });
       return;
     }
 
-    createAward.mutate({
-      data: {
-        fixtureId: Number(fixtureId),
-        playerId: Number(playerId),
-        type: "motm",
+    try {
+      const res = await fetch("/api/awards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fixtureId: Number(fixtureId),
+          playerId: Number(playerId),
+          type: "motm"
+        })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("AWARD ERROR:", text);
+        throw new Error(text || "Failed");
       }
-    }, {
-      onSuccess: () => {
-        toast({ title: "Muppet of the Match awarded" });
-        invalidate();
-        setPlayerId("");
-      }
-    });
+
+      toast({ title: "Muppet of the Match awarded 🐐" });
+      invalidate();
+      setPlayerId("");
+    } catch {
+      toast({ title: "Failed to award muppet", variant: "destructive" });
+    }
   };
 
   const handleRemoveAward = (awardId: number, playerName: string) => {
