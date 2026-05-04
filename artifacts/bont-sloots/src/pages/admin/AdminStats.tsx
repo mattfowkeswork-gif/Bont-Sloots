@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
+type MatchStat = { id: number; playerId: number; fixtureId: number; type: string };
 type EmergencyGkStat = { id: number; playerId: number };
 
 export function AdminStats() {
@@ -24,6 +25,7 @@ export function AdminStats() {
   const { toast } = useToast();
 
   const [fixtureId, setFixtureId] = useState<string>("");
+  const [fixtureStats, setFixtureStats] = useState<MatchStat[]>([]);
   const [emergencyGkStats, setEmergencyGkStats] = useState<EmergencyGkStat[]>([]);
   const [loadingEmergencyGk, setLoadingEmergencyGk] = useState<Set<number>>(new Set());
 
@@ -39,19 +41,70 @@ export function AdminStats() {
     { query: { queryKey: ["fixture-players", fixtureId], enabled: !!fixtureId } }
   );
 
-  // Fetch current emergency GK stats for the selected fixture
-  useEffect(() => {
+  const refreshFixtureStats = async () => {
     if (!fixtureId) {
+      setFixtureStats([]);
       setEmergencyGkStats([]);
       return;
     }
-    fetch(`/api/fixtures/${fixtureId}/stats?type=emergency_gk`)
-      .then(r => r.json())
-      .then(data => setEmergencyGkStats(Array.isArray(data) ? data : []))
-      .catch(() => setEmergencyGkStats([]));
+
+    try {
+      const res = await fetch(`/api/fixtures/${fixtureId}/stats`);
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : [];
+      setFixtureStats(rows);
+      setEmergencyGkStats(rows.filter((r: MatchStat) => r.type === "emergency_gk"));
+    } catch {
+      setFixtureStats([]);
+      setEmergencyGkStats([]);
+    }
+  };
+
+  useEffect(() => {
+    refreshFixtureStats();
   }, [fixtureId]);
 
   const presentPlayers = fixturePlayers?.filter(fp => fp.present) ?? [];
+
+  const invalidateStatViews = () => {
+    queryClient.invalidateQueries({ queryKey: getListStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
+  };
+
+  const handleQuickStat = async (playerIdNum: number, playerName: string, type: "goal" | "assist") => {
+    if (!fixtureId) return;
+
+    try {
+      await new Promise<void>((resolve, reject) =>
+        createStat.mutate(
+          { data: { fixtureId: Number(fixtureId), playerId: playerIdNum, type } },
+          { onSuccess: () => resolve(), onError: reject }
+        )
+      );
+      await refreshFixtureStats();
+      invalidateStatViews();
+      toast({ title: `${type === "goal" ? "Goal" : "Assist"} added for ${playerName}` });
+    } catch {
+      toast({ title: `Failed to add ${type}`, variant: "destructive" });
+    }
+  };
+
+  const handleUndoStat = async (playerIdNum: number, playerName: string, type: "goal" | "assist") => {
+    const stat = [...fixtureStats].reverse().find(s => s.playerId === playerIdNum && s.type === type);
+    if (!stat) return;
+
+    try {
+      await new Promise<void>((resolve, reject) =>
+        deleteStat.mutate({ id: stat.id }, { onSuccess: () => resolve(), onError: reject })
+      );
+      await refreshFixtureStats();
+      invalidateStatViews();
+      toast({ title: `${type === "goal" ? "Goal" : "Assist"} removed for ${playerName}` });
+    } catch {
+      toast({ title: `Failed to undo ${type}`, variant: "destructive" });
+    }
+  };
 
   const handleToggleEmergencyGk = async (playerIdNum: number, currentlyChecked: boolean) => {
     setLoadingEmergencyGk(prev => new Set(prev).add(playerIdNum));
@@ -145,27 +198,70 @@ export function AdminStats() {
           <p className="text-sm text-muted-foreground">No players marked present.</p>
         ) : (
           <div className="space-y-3">
-            {presentPlayers.map(p => (
-              <div key={p.playerId} className="flex items-center justify-between bg-card border border-border/50 rounded-xl p-3">
-                <div className="font-semibold text-white">{p.playerName}</div>
+            {presentPlayers.map(p => {
+              const goals = fixtureStats.filter(s => s.playerId === p.playerId && s.type === "goal").length;
+              const assists = fixtureStats.filter(s => s.playerId === p.playerId && s.type === "assist").length;
 
-                <div className="flex gap-2">
-                  <button
-                    className="px-3 py-1 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400"
-                    onClick={() => createStat.mutate({ data: { fixtureId: Number(fixtureId), playerId: p.playerId, type: "goal" } })}
-                  >
-                    ⚽ +1
-                  </button>
+              return (
+                <div key={p.playerId} className="bg-card border border-border/50 rounded-xl p-3 space-y-3">
+                  <div className="font-semibold text-white">{p.playerName}</div>
 
-                  <button
-                    className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400"
-                    onClick={() => createStat.mutate({ data: { fixtureId: Number(fixtureId), playerId: p.playerId, type: "assist" } })}
-                  >
-                    🎯 +1
-                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-green-400 font-bold">⚽ Goals</span>
+                        <span className="text-lg font-black text-white">{goals}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20"
+                          variant="outline"
+                          onClick={() => handleQuickStat(p.playerId, p.playerName, "goal")}
+                        >
+                          +1
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="w-10"
+                          variant="outline"
+                          disabled={goals === 0}
+                          onClick={() => handleUndoStat(p.playerId, p.playerName, "goal")}
+                        >
+                          −
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-blue-400 font-bold">🎯 Assists</span>
+                        <span className="text-lg font-black text-white">{assists}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20"
+                          variant="outline"
+                          onClick={() => handleQuickStat(p.playerId, p.playerName, "assist")}
+                        >
+                          +1
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="w-10"
+                          variant="outline"
+                          disabled={assists === 0}
+                          onClick={() => handleUndoStat(p.playerId, p.playerName, "assist")}
+                        >
+                          −
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
