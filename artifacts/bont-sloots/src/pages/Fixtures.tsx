@@ -4,9 +4,8 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, CalendarDays, Trophy, TrendingUp, FileText } from "lucide-react";
+import { MapPin, Clock, CalendarDays, Trophy, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { MotmVotingDialog } from "@/components/MotmVotingDialog";
-import { FixtureValueModal } from "@/components/FixtureValueModal";
 import { PublicMatchReportDialog } from "@/components/MatchReportDialog";
 
 export function Fixtures() {
@@ -15,8 +14,8 @@ export function Fixtures() {
   });
 
   const [votingFixture, setVotingFixture] = useState<{ id: number; opponent: string } | null>(null);
-  const [valueFixture, setValueFixture] = useState<{ id: number; opponent: string } | null>(null);
   const [reportFixture, setReportFixture] = useState<{ id: number; opponent: string } | null>(null);
+  const [showFullHistory, setShowFullHistory] = useState(false);
 
   if (isLoading) {
     return (
@@ -40,6 +39,7 @@ export function Fixtures() {
   const upcoming = fixtures.filter(f => !f.played);
   const played = fixtures.filter(f => f.played);
   const latestResults = [...played].reverse().slice(0, 5);
+  const visibleResults = showFullHistory ? [...played].reverse() : latestResults;
 
   const isVotingOpen = (fixture: typeof fixtures[0]) => {
     if (!fixture.votingClosesAt || !fixture.played) return false;
@@ -68,15 +68,27 @@ export function Fixtures() {
     }
 
     return (
-      <div key={fixture.id} className="bg-card border border-border/50 rounded-xl p-4">
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center justify-center text-center w-16 border-r border-border/50 pr-4 flex-shrink-0">
-            <span className="text-xs text-muted-foreground uppercase">{format(new Date(fixture.matchDate), "MMM")}</span>
-            <span className="text-xl font-bold text-white">{format(new Date(fixture.matchDate), "d")}</span>
+      <div key={fixture.id} className={`relative overflow-hidden bg-card border rounded-2xl p-4 shadow-lg shadow-black/20 ${
+        fixture.played ? "border-white/10" : "border-primary/25"
+      }`}>
+        <div className={`absolute inset-0 pointer-events-none ${
+          fixture.played ? "bg-gradient-to-br from-white/5 via-transparent to-transparent" : "bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5"
+        }`} />
+        <div className="relative flex gap-4">
+          <div className="flex flex-col items-center justify-center text-center w-16 rounded-xl bg-black/25 border border-white/10 py-2 flex-shrink-0">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{format(new Date(fixture.matchDate), "MMM")}</span>
+            <span className="text-2xl font-black text-white leading-none">{format(new Date(fixture.matchDate), "d")}</span>
           </div>
 
           <div className="flex-1 flex flex-col justify-center min-w-0">
-            <div className="font-bold text-lg text-white truncate">vs {fixture.opponent}</div>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="font-black text-lg text-white truncate">vs {fixture.opponent}</div>
+              {!fixture.played && (
+                <Badge className="bg-primary/15 text-primary border border-primary/25 text-[10px] uppercase tracking-wide">
+                  Upcoming
+                </Badge>
+              )}
+            </div>
             <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-primary" />
@@ -114,17 +126,7 @@ export function Fixtures() {
                 Vote for Man of the Match
               </Button>
             )}
-            {fixture.played && (
-              <Button
-                size="sm"
-                className="w-full gap-2 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
-                variant="outline"
-                onClick={() => setValueFixture({ id: fixture.id, opponent: fixture.opponent })}
-              >
-                <TrendingUp className="w-3.5 h-3.5" />
-                Value Report
-              </Button>
-            )}
+
             {fixture.played && (
               <Button
                 size="sm"
@@ -145,6 +147,20 @@ export function Fixtures() {
   return (
     <>
       <div className="space-y-8 pb-4">
+        <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 shadow-xl shadow-black/25">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-transparent pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center gap-2 text-primary text-xs font-black uppercase tracking-[0.22em]">
+              <CalendarDays className="w-4 h-4" />
+              Fixtures
+            </div>
+            <h1 className="mt-2 text-4xl font-black text-white tracking-tight">Match Centre</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Upcoming matches and the latest Bont Sloots FC results.
+            </p>
+          </div>
+        </section>
+
         {upcoming.length > 0 && (
           <section>
             <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 px-1">Upcoming</h2>
@@ -154,19 +170,40 @@ export function Fixtures() {
           </section>
         )}
 
-        {latestResults.length > 0 && (
+        {visibleResults.length > 0 && (
           <section>
             <div className="flex items-end justify-between gap-3 mb-4 px-1">
               <div>
-                <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Latest Results</h2>
-                <p className="text-xs text-muted-foreground mt-1">Showing the last 5 completed matches.</p>
+                <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                  {showFullHistory ? "Full Season History" : "Latest Results"}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {showFullHistory ? `Showing all ${played.length} completed matches.` : "Showing the last 5 completed matches."}
+                </p>
               </div>
-              <Badge variant="outline" className="text-[10px] uppercase tracking-wide border-border/60 text-muted-foreground">
-                Archive soon
-              </Badge>
+              {played.length > 5 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs border-border/60 bg-card/80"
+                  onClick={() => setShowFullHistory(!showFullHistory)}
+                >
+                  {showFullHistory ? (
+                    <>
+                      <ChevronUp className="w-3.5 h-3.5" />
+                      Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                      Full history
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
             <div className="space-y-3">
-              {latestResults.map(renderFixture)}
+              {visibleResults.map(renderFixture)}
             </div>
           </section>
         )}
@@ -178,15 +215,6 @@ export function Fixtures() {
           opponent={votingFixture.opponent}
           open={true}
           onOpenChange={(open) => !open && setVotingFixture(null)}
-        />
-      )}
-
-      {valueFixture && (
-        <FixtureValueModal
-          fixtureId={valueFixture.id}
-          opponent={valueFixture.opponent}
-          open={true}
-          onOpenChange={(open) => !open && setValueFixture(null)}
         />
       )}
 
