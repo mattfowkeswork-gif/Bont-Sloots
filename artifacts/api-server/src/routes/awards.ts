@@ -29,7 +29,7 @@ router.get("/awards", async (_req, res): Promise<void> => {
 });
 
 router.post("/awards", async (req, res): Promise<void> => {
-  const parsed = CreateAwardBody.safeParse(req.body);
+  const parsed = CreateAwardBody.safeParse(req.body?.data ?? req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;

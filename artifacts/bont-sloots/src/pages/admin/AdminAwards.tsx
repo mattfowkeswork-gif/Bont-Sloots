@@ -11,7 +11,6 @@ import { useState } from "react";
 export function AdminAwards() {
   const { data: fixtures } = useListFixtures();
   const { data: awards } = useListAwards();
-  const createAward = useCreateAward();
   const deleteAward = useDeleteAward();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -123,10 +122,10 @@ export function AdminAwards() {
             <Button
               onClick={handleAddAward}
               className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white"
-              disabled={!fixtureId || !playerId || createAward.isPending}
+              disabled={!fixtureId || !playerId || false}
             >
               <AlertTriangle className="w-4 h-4 mr-2" />
-              {createAward.isPending ? "Saving..." : "Assign Muppet Award"}
+              {false ? "Saving..." : "Assign Muppet Award"}
             </Button>
           </CardContent>
         </Card>

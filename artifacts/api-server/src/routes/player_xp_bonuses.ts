@@ -6,7 +6,7 @@ import { db, playerXpBonusesTable, playersTable } from "@workspace/db";
 const router: IRouter = Router();
 
 const CreateBonusBody = z.object({
-  amount: z.number().int().positive(),
+  amount: z.coerce.number().int().positive(),
   reason: z.string().min(1).max(500),
 });
 
