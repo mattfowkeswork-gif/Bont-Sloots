@@ -39,6 +39,7 @@ export function Fixtures() {
 
   const upcoming = fixtures.filter(f => !f.played);
   const played = fixtures.filter(f => f.played);
+  const latestResults = [...played].reverse().slice(0, 5);
 
   const isVotingOpen = (fixture: typeof fixtures[0]) => {
     if (!fixture.votingClosesAt || !fixture.played) return false;
@@ -153,11 +154,19 @@ export function Fixtures() {
           </section>
         )}
 
-        {played.length > 0 && (
+        {latestResults.length > 0 && (
           <section>
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 px-1">Played</h2>
+            <div className="flex items-end justify-between gap-3 mb-4 px-1">
+              <div>
+                <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Latest Results</h2>
+                <p className="text-xs text-muted-foreground mt-1">Showing the last 5 completed matches.</p>
+              </div>
+              <Badge variant="outline" className="text-[10px] uppercase tracking-wide border-border/60 text-muted-foreground">
+                Archive soon
+              </Badge>
+            </div>
             <div className="space-y-3">
-              {[...played].reverse().map(renderFixture)}
+              {latestResults.map(renderFixture)}
             </div>
           </section>
         )}
