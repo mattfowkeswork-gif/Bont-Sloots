@@ -40,13 +40,12 @@ export function AdminAwards() {
     }
 
     try {
-      const res = await fetch("/api/awards", {
+      const res = await fetch("/api/stats?action=muppet-award", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fixtureId: Number(fixtureId),
-          playerId: Number(playerId),
-          type: "motm"
+          playerId: Number(playerId)
         })
       });
 

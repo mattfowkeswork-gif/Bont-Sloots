@@ -46,6 +46,58 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      const { action } = req.query;
+
+      if (action === "xp-bonus") {
+        const { playerId, amount, reason } = req.body;
+
+        if (!playerId || !amount || !reason) {
+          return res.status(400).json({ error: "playerId, amount and reason are required" });
+        }
+
+        const result = await pool.query(
+          `
+          INSERT INTO player_xp_bonuses (player_id, amount, reason)
+          VALUES ($1, $2, $3)
+          RETURNING id, player_id, amount, reason, created_at
+          `,
+          [playerId, amount, reason]
+        );
+
+        return res.status(201).json({
+          id: result.rows[0].id,
+          playerId: result.rows[0].player_id,
+          amount: result.rows[0].amount,
+          reason: result.rows[0].reason,
+          createdAt: result.rows[0].created_at,
+        });
+      }
+
+      if (action === "muppet-award") {
+        const { playerId, fixtureId } = req.body;
+
+        if (!playerId || !fixtureId) {
+          return res.status(400).json({ error: "playerId and fixtureId are required" });
+        }
+
+        const result = await pool.query(
+          `
+          INSERT INTO awards (player_id, fixture_id, type)
+          VALUES ($1, $2, 'motm')
+          RETURNING id, player_id, fixture_id, type, created_at
+          `,
+          [playerId, fixtureId]
+        );
+
+        return res.status(201).json({
+          id: result.rows[0].id,
+          playerId: result.rows[0].player_id,
+          fixtureId: result.rows[0].fixture_id,
+          type: result.rows[0].type,
+          createdAt: result.rows[0].created_at,
+        });
+      }
+
       const { playerId, fixtureId, type } = req.body;
 
       if (!playerId || !fixtureId || !type) {

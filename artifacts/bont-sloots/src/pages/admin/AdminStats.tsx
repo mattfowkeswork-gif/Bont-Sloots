@@ -148,10 +148,10 @@ export function AdminStats() {
     }
     setSavingBonus(true);
     try {
-      const res = await fetch(`/api/players/${bonusPlayerId}/xp-bonuses`, {
+      const res = await fetch(`/api/stats?action=xp-bonus`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, reason: bonusReason.trim() }),
+        body: JSON.stringify({ playerId: Number(bonusPlayerId), amount, reason: bonusReason.trim() }),
       });
       if (!res.ok) {
   const text = await res.text();
