@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
-type StatType = "goal" | "assist" | "clean_sheet";
 type EmergencyGkStat = { id: number; playerId: number };
 
 export function AdminStats() {
@@ -25,10 +24,6 @@ export function AdminStats() {
   const { toast } = useToast();
 
   const [fixtureId, setFixtureId] = useState<string>("");
-  const [playerId, setPlayerId] = useState<string>("");
-  const [statType, setStatType] = useState<StatType>("goal");
-  const [count, setCount] = useState(1);
-
   const [emergencyGkStats, setEmergencyGkStats] = useState<EmergencyGkStat[]>([]);
   const [loadingEmergencyGk, setLoadingEmergencyGk] = useState<Set<number>>(new Set());
 
@@ -41,7 +36,7 @@ export function AdminStats() {
 
   const { data: fixturePlayers } = useGetFixturePlayers(
     fixtureId ? Number(fixtureId) : 0,
-    { query: { enabled: !!fixtureId } }
+    { query: { queryKey: ["fixture-players", fixtureId], enabled: !!fixtureId } }
   );
 
   // Fetch current emergency GK stats for the selected fixture
@@ -57,28 +52,6 @@ export function AdminStats() {
   }, [fixtureId]);
 
   const presentPlayers = fixturePlayers?.filter(fp => fp.present) ?? [];
-
-  const handleAddStat = async () => {
-    if (!fixtureId || !playerId) {
-      toast({ title: "Please select both fixture and player", variant: "destructive" });
-      return;
-    }
-
-    const data = { fixtureId: Number(fixtureId), playerId: Number(playerId), type: statType };
-
-    for (let i = 0; i < count; i++) {
-      await new Promise<void>((resolve, reject) =>
-        createStat.mutate({ data }, { onSuccess: () => resolve(), onError: reject })
-      );
-    }
-
-    const label = statType === "goal" ? (count === 1 ? "Goal" : "Goals") : statType === "assist" ? (count === 1 ? "Assist" : "Assists") : (count === 1 ? "Clean Sheet" : "Clean Sheets");
-    toast({ title: `${count} ${label} added` });
-    queryClient.invalidateQueries({ queryKey: getListStatsQueryKey() });
-    queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
-    queryClient.invalidateQueries({ queryKey: getGetSquadStatsQueryKey() });
-    setCount(1);
-  };
 
   const handleToggleEmergencyGk = async (playerIdNum: number, currentlyChecked: boolean) => {
     setLoadingEmergencyGk(prev => new Set(prev).add(playerIdNum));
@@ -143,113 +116,58 @@ export function AdminStats() {
 
   return (
     <div className="space-y-6">
+
       <div>
-        <h2 className="text-xl font-bold mb-1">Add Match Stats</h2>
+        <h2 className="text-xl font-bold mb-1">Match Stats (Quick Edit)</h2>
         <p className="text-xs text-muted-foreground mb-4">
-          Appearances are counted automatically when you mark players as present on a fixture.
+          Select a match, then tap + to quickly add goals or assists.
         </p>
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <div className="grid gap-2">
-              <Label>Select Fixture</Label>
-              <Select value={fixtureId} onValueChange={setFixtureId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a played fixture" />
-                </SelectTrigger>
-                <SelectContent>
-                  {playedFixtures.map(f => (
-                    <SelectItem key={f.id} value={f.id.toString()}>
-                      vs {f.opponent} ({f.homeScore}-{f.awayScore})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div className="grid gap-2">
-              <Label>Select Player</Label>
-              <Select value={playerId} onValueChange={setPlayerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select player" />
-                </SelectTrigger>
-                <SelectContent>
-                  {presentPlayers.map(p => (
-                    <SelectItem key={p.playerId} value={p.playerId.toString()}>
-                      {p.playerName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="mb-4">
+          <Label className="text-xs mb-1 block">Fixture</Label>
+          <Select value={fixtureId} onValueChange={setFixtureId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a played fixture" />
+            </SelectTrigger>
+            <SelectContent>
+              {playedFixtures.map(f => (
+                <SelectItem key={f.id} value={f.id.toString()}>
+                  vs {f.opponent} ({f.homeScore}-{f.awayScore})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="grid gap-2">
-              <Label>Stat Type</Label>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  type="button"
-                  variant={statType === "goal" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setStatType("goal")}
-                >
-                  ⚽ Goal
-                </Button>
-                <Button
-                  type="button"
-                  variant={statType === "assist" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setStatType("assist")}
-                >
-                  🎯 Assist
-                </Button>
-                <Button
-                  type="button"
-                  variant={statType === "clean_sheet" ? "default" : "outline"}
-                  className="flex-1 min-w-full"
-                  onClick={() => setStatType("clean_sheet")}
-                >
-                  🧤 Clean Sheet
-                </Button>
+        {!fixtureId ? (
+          <p className="text-sm text-muted-foreground">Select a fixture above.</p>
+        ) : presentPlayers.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No players marked present.</p>
+        ) : (
+          <div className="space-y-3">
+            {presentPlayers.map(p => (
+              <div key={p.playerId} className="flex items-center justify-between bg-card border border-border/50 rounded-xl p-3">
+                <div className="font-semibold text-white">{p.playerName}</div>
+
+                <div className="flex gap-2">
+                  <button
+                    className="px-3 py-1 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400"
+                    onClick={() => createStat.mutate({ data: { fixtureId: Number(fixtureId), playerId: p.playerId, type: "goal" } })}
+                  >
+                    ⚽ +1
+                  </button>
+
+                  <button
+                    className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400"
+                    onClick={() => createStat.mutate({ data: { fixtureId: Number(fixtureId), playerId: p.playerId, type: "assist" } })}
+                  >
+                    🎯 +1
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>How many?</Label>
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  onClick={() => setCount(c => Math.max(1, c - 1))}
-                  disabled={count <= 1}
-                >
-                  -
-                </Button>
-                <span className="text-xl font-bold w-8 text-center">{count}</span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  onClick={() => setCount(c => Math.min(10, c + 1))}
-                  disabled={count >= 10}
-                >
-                  +
-                </Button>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleAddStat}
-              className="w-full mt-4"
-              disabled={!fixtureId || !playerId || createStat.isPending}
-            >
-              {createStat.isPending
-                ? "Saving..."
-                : `Record ${count} ${statType === "goal" ? (count === 1 ? "Goal" : "Goals") : statType === "assist" ? (count === 1 ? "Assist" : "Assists") : (count === 1 ? "Clean Sheet" : "Clean Sheets")}`}
-            </Button>
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Manual XP Bonus Section */}
