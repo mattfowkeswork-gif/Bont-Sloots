@@ -540,8 +540,8 @@ export function Dashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {dashboard.recentResults.length > 0 ? (
-            dashboard.recentResults.map((fixture) => {
+          {(dashboard.recentResults ?? []).length > 0 ? (
+            (dashboard.recentResults ?? []).map((fixture) => {
               const isWin = (fixture.isHome && fixture.homeScore! > fixture.awayScore!) || (!fixture.isHome && fixture.awayScore! > fixture.homeScore!);
               const isDraw = fixture.homeScore === fixture.awayScore;
               const bsScore = fixture.isHome ? fixture.homeScore : fixture.awayScore;
