@@ -10,6 +10,7 @@ const pool = new Pool({
 });
 
 const TEAM_URL = "https://staveley6aside.leaguerepublic.com/team/480035827/849970515.html";
+const STANDINGS_URL = "https://staveley6aside.leaguerepublic.com/standingsForDate/177116197/2/-1/-1.html";
 const OUR_TEAM = "Real Sosobad";
 
 const BROWSER_HEADERS = {
@@ -124,6 +125,65 @@ function cleanTeamName(name) {
 function parseLeagueDate(raw) {
   const [day, month, year] = raw.split("/").map(Number);
   return `20${String(year).padStart(2, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+async function scrapeLeagueTable() {
+  try {
+    const response = await fetch(STANDINGS_URL, { headers: BROWSER_HEADERS });
+    const html = await response.text();
+
+    const tbodyMatch = html.match(/<tbody>([\s\S]*?)<\/tbody>/);
+    if (!tbodyMatch) return [];
+
+    const rows = [];
+    const trPattern = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+    let trMatch;
+
+    while ((trMatch = trPattern.exec(tbodyMatch[1])) !== null) {
+      const rowHtml = trMatch[1];
+
+      const cells = [];
+      const tdPattern = /<td[^>]*>([\s\S]*?)<\/td>/g;
+      let tdMatch;
+
+      while ((tdMatch = tdPattern.exec(rowHtml)) !== null) {
+        cells.push(tdMatch[1].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim());
+      }
+
+      const nameMatch = rowHtml.match(/<a[^>]*>\s*([\s\S]*?)\s*<\/a>/);
+      const name = cleanTeamName(nameMatch ? nameMatch[1] : cells[1]);
+
+      if (!name || cells.length < 10) continue;
+
+      const played = Number(cells[2] || 0);
+      const wins = Number(cells[3] || 0);
+      const draws = Number(cells[4] || 0);
+      const losses = Number(cells[5] || 0);
+      const gf = Number(cells[6] || 0);
+      const ga = Number(cells[7] || 0);
+      const gd = Number(cells[8] || gf - ga);
+      const points = Number(cells[9] || 0);
+
+      rows.push({
+        rank: Number(cells[0] || rows.length + 1),
+        name,
+        played,
+        wins,
+        draws,
+        losses,
+        gf,
+        ga,
+        gd,
+        points,
+        isUs: name.toLowerCase().includes(OUR_TEAM.toLowerCase()),
+      });
+    }
+
+    return rows;
+  } catch (error) {
+    console.error("League table scrape failed", error);
+    return [];
+  }
 }
 
 async function syncFixturesFromLeagueRepublic() {
@@ -326,9 +386,12 @@ const nextFixture = nextFixtureRaw
     }
   : null;
 
+    const leagueTable = await scrapeLeagueTable();
+
     res.status(200).json({
       nextFixture,
       votingOpenFixture,
+      leagueTable,
       
       seasonRecord: (() => {
         const playedFixtures = fixtures.filter(f =>

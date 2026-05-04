@@ -136,6 +136,62 @@ function HallOfFame({ hof }: { hof: { topScorer: any; topRated?: any; mostMotms:
   );
 }
 
+function LeagueTable({ table }: { table?: any[] }) {
+  if (!table || table.length === 0) return null;
+
+  return (
+    <Card className="bg-card border-border/50 overflow-hidden">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-black text-white flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-400" />
+            League Table
+          </CardTitle>
+          <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/10">
+            Live
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <div className="space-y-1">
+          {table.slice(0, 8).map((team) => (
+            <div
+              key={`${team.rank}-${team.name}`}
+              className={`grid grid-cols-[28px_1fr_32px_32px_42px] items-center gap-2 rounded-lg px-2 py-2 text-xs ${
+                team.isUs
+                  ? "bg-primary/15 border border-primary/30 text-white"
+                  : "bg-black/15 border border-white/5 text-muted-foreground"
+              }`}
+            >
+              <div className={`font-black text-center ${team.isUs ? "text-primary" : "text-muted-foreground"}`}>
+                {team.rank}
+              </div>
+              <div className={`truncate font-bold ${team.isUs ? "text-white" : "text-white/80"}`}>
+                {team.name}
+              </div>
+              <div className="text-center font-mono">{team.played}</div>
+              <div className={`text-center font-mono ${team.gd >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {team.gd > 0 ? "+" : ""}{team.gd}
+              </div>
+              <div className={`text-right font-black ${team.isUs ? "text-primary" : "text-white"}`}>
+                {team.points} pts
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-[28px_1fr_32px_32px_42px] gap-2 px-2 pt-2 mt-2 border-t border-border/40 text-[9px] uppercase tracking-wider text-muted-foreground">
+          <span>Pos</span>
+          <span>Team</span>
+          <span className="text-center">P</span>
+          <span className="text-center">GD</span>
+          <span className="text-right">Pts</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface ScoutData {
   name: string;
   rank: number;
@@ -435,25 +491,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Total Squad Value */}
-      {dashboard.totalSquadValue > 0 && (
-        <Card className="bg-card border-border/50 relative overflow-hidden">
-          <div className="absolute -right-4 -bottom-4 opacity-5">
-            <TrendingUp className="w-24 h-24" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground font-normal">Total Squad Value</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-yellow-400">
-              £{(dashboard.totalSquadValue / 1_000_000).toFixed(1)}M
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">Combined market value</div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Hall of Fame */}
       {dashboard.hallOfFame && <HallOfFame hof={dashboard.hallOfFame} />}
 
