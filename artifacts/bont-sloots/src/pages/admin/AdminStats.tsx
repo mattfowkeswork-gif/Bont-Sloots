@@ -173,9 +173,9 @@ export function AdminStats() {
                   <SelectValue placeholder="Select player" />
                 </SelectTrigger>
                 <SelectContent>
-                  {players?.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>
-                      {p.name}
+                  {presentPlayers.map(p => (
+                    <SelectItem key={p.playerId} value={p.playerId.toString()}>
+                      {p.playerName}
                     </SelectItem>
                   ))}
                 </SelectContent>
