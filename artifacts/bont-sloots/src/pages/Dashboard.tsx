@@ -139,28 +139,48 @@ function HallOfFame({ hof }: { hof: { topScorer: any; topRated?: any; mostMotms:
 function LeagueTable({ table }: { table?: any[] }) {
   if (!table || table.length === 0) return null;
 
+  const ourTeam = table.find(t => t.isUs);
+
   return (
-    <Card className="bg-card border-border/50 overflow-hidden">
-      <CardHeader className="pb-2">
+    <Card className="bg-card border-primary/20 overflow-hidden relative shadow-xl shadow-black/30">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-yellow-500/5 pointer-events-none" />
+      <CardHeader className="pb-2 relative">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-black text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" />
-            League Table
-          </CardTitle>
-          <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/10">
-            Live
+          <div>
+            <CardTitle className="text-xl font-black text-white flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-400" />
+              League Table
+            </CardTitle>
+            {ourTeam && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Real Sosobad are #{ourTeam.rank} with {ourTeam.points} points
+              </p>
+            )}
+          </div>
+          <Badge className="bg-primary/20 text-primary border border-primary/30 text-[10px] uppercase tracking-wide">
+            Auto updated
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-2">
-        <div className="space-y-1">
+
+      <CardContent className="pt-2 relative">
+        <div className="grid grid-cols-[28px_1fr_28px_28px_36px_44px] gap-2 px-2 pb-2 text-[9px] uppercase tracking-wider text-muted-foreground border-b border-border/40">
+          <span>#</span>
+          <span>Club</span>
+          <span className="text-center">P</span>
+          <span className="text-center">W</span>
+          <span className="text-center">GD</span>
+          <span className="text-right">Pts</span>
+        </div>
+
+        <div className="space-y-1 mt-2">
           {table.slice(0, 8).map((team) => (
             <div
               key={`${team.rank}-${team.name}`}
-              className={`grid grid-cols-[28px_1fr_32px_32px_42px] items-center gap-2 rounded-lg px-2 py-2 text-xs ${
+              className={`grid grid-cols-[28px_1fr_28px_28px_36px_44px] items-center gap-2 rounded-xl px-2 py-2 text-xs transition-all ${
                 team.isUs
-                  ? "bg-primary/15 border border-primary/30 text-white"
-                  : "bg-black/15 border border-white/5 text-muted-foreground"
+                  ? "bg-primary/20 border border-primary/40 shadow-lg shadow-primary/10"
+                  : "bg-black/20 border border-white/5"
               }`}
             >
               <div className={`font-black text-center ${team.isUs ? "text-primary" : "text-muted-foreground"}`}>
@@ -169,23 +189,16 @@ function LeagueTable({ table }: { table?: any[] }) {
               <div className={`truncate font-bold ${team.isUs ? "text-white" : "text-white/80"}`}>
                 {team.name}
               </div>
-              <div className="text-center font-mono">{team.played}</div>
-              <div className={`text-center font-mono ${team.gd >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+              <div className="text-center font-mono text-muted-foreground">{team.played}</div>
+              <div className="text-center font-mono text-white">{team.wins}</div>
+              <div className={`text-center font-mono font-bold ${team.gd >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {team.gd > 0 ? "+" : ""}{team.gd}
               </div>
               <div className={`text-right font-black ${team.isUs ? "text-primary" : "text-white"}`}>
-                {team.points} pts
+                {team.points}
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="grid grid-cols-[28px_1fr_32px_32px_42px] gap-2 px-2 pt-2 mt-2 border-t border-border/40 text-[9px] uppercase tracking-wider text-muted-foreground">
-          <span>Pos</span>
-          <span>Team</span>
-          <span className="text-center">P</span>
-          <span className="text-center">GD</span>
-          <span className="text-right">Pts</span>
         </div>
       </CardContent>
     </Card>
@@ -451,38 +464,53 @@ export function Dashboard() {
           </CardContent>
         </Card>
       )}
-
-      {/* Season Record */}
+      {/* Club Snapshot */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="bg-card border-border/50">
+        <Card className="bg-card border-emerald-500/20 relative overflow-hidden shadow-lg shadow-black/20">
+          <div className="absolute -right-5 -bottom-5 opacity-10">
+            <ShieldAlert className="w-24 h-24 text-emerald-400" />
+          </div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground font-normal">Season Form</CardTitle>
+            <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Season Form</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black text-white">
-              {dashboard.seasonRecord.wins}<span className="text-muted-foreground text-xl font-normal mx-1">W</span>
-              {dashboard.seasonRecord.draws}<span className="text-muted-foreground text-xl font-normal mx-1">D</span>
-              {dashboard.seasonRecord.losses}<span className="text-muted-foreground text-xl font-normal mx-1">L</span>
+              {dashboard.seasonRecord.wins}
+              <span className="text-emerald-400 text-base mx-1">W</span>
+              {dashboard.seasonRecord.draws}
+              <span className="text-yellow-400 text-base mx-1">D</span>
+              {dashboard.seasonRecord.losses}
+              <span className="text-red-400 text-base mx-1">L</span>
             </div>
-            <div className="text-xs text-muted-foreground mt-2">
-              GD: {dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst > 0 ? "+" : ""}{dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst} ({dashboard.seasonRecord.goalsFor}F / {dashboard.seasonRecord.goalsAgainst}A)
+            <div className="mt-2 text-xs text-muted-foreground">
+              GD <span className={(dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst) >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+                {dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst > 0 ? "+" : ""}{dashboard.seasonRecord.goalsFor - dashboard.seasonRecord.goalsAgainst}
+              </span>
+              <span className="ml-1">({dashboard.seasonRecord.goalsFor}F / {dashboard.seasonRecord.goalsAgainst}A)</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border/50 relative overflow-hidden">
-          <div className="absolute -right-4 -bottom-4 opacity-5">
-            <Zap className="w-24 h-24" />
+        <Card className="bg-card border-primary/20 relative overflow-hidden shadow-lg shadow-black/20">
+          <div className="absolute -right-5 -bottom-5 opacity-10">
+            <Zap className="w-24 h-24 text-primary" />
           </div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground font-normal">Highest Level</CardTitle>
+            <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Highest Level</CardTitle>
           </CardHeader>
           <CardContent>
             {(dashboard as any).topLevel ? (
               <>
-                <div className="text-xl font-bold text-white truncate">{(dashboard as any).topLevel.playerName}</div>
-                <div className="text-2xl font-black text-primary mt-1">
-                  Lvl {(dashboard as any).topLevel.level} <span className="text-sm font-normal text-muted-foreground">{(dashboard as any).topLevel.totalXp} XP</span>
+                <Link href={`/players/${(dashboard as any).topLevel.playerId}`}>
+                  <div className="text-lg font-black text-white truncate hover:text-primary transition-colors">
+                    {(dashboard as any).topLevel.playerName}
+                  </div>
+                </Link>
+                <div className="text-3xl font-black text-primary mt-1">
+                  LVL {(dashboard as any).topLevel.level}
+                </div>
+                <div className="text-xs text-muted-foreground font-mono">
+                  {(dashboard as any).topLevel.totalXp} XP
                 </div>
               </>
             ) : (
@@ -491,6 +519,7 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
       {/* League Table */}
       <LeagueTable table={(dashboard as any).leagueTable} />
 
@@ -498,9 +527,14 @@ export function Dashboard() {
       {dashboard.hallOfFame && <HallOfFame hof={dashboard.hallOfFame} />}
 
       {/* Recent Results */}
-      <div>
-        <h3 className="font-bold text-lg mb-3">Recent Results</h3>
-        <div className="space-y-3">
+      <Card className="bg-card border-border/50 overflow-hidden">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-black text-white flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary" />
+            Recent Results
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
           {dashboard.recentResults.length > 0 ? (
             dashboard.recentResults.map((fixture) => {
               const isWin = (fixture.isHome && fixture.homeScore! > fixture.awayScore!) || (!fixture.isHome && fixture.awayScore! > fixture.homeScore!);
@@ -509,7 +543,7 @@ export function Dashboard() {
               const oppScore = fixture.isHome ? fixture.awayScore : fixture.homeScore;
 
               return (
-                <Card key={fixture.id} className="bg-card border-border/50 overflow-hidden">
+                <Card key={fixture.id} className="bg-black/20 border-white/5 overflow-hidden">
                   <div className="flex items-center">
                     <div className={`w-1.5 self-stretch ${isWin ? "bg-green-500" : isDraw ? "bg-yellow-500" : "bg-red-500"}`} />
                     <div className="flex-1 p-3 flex justify-between items-center">
@@ -537,8 +571,8 @@ export function Dashboard() {
               No recent results
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
