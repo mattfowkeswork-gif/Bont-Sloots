@@ -491,6 +491,9 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+      {/* League Table */}
+      <LeagueTable table={(dashboard as any).leagueTable} />
+
       {/* Hall of Fame */}
       {dashboard.hallOfFame && <HallOfFame hof={dashboard.hallOfFame} />}
 
