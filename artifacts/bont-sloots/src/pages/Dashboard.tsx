@@ -368,13 +368,18 @@ export function Dashboard() {
     <div className="space-y-6 pb-4">
       {/* Squad Photo Banner */}
       {dashboard.squadPhotoUrl && (
-        <div className="w-full rounded-xl overflow-hidden border border-border/50 shadow-lg shadow-black/50" style={{ maxHeight: 220 }}>
+        <div className="relative w-full rounded-2xl overflow-hidden border border-white/10 shadow-xl shadow-black/40 bg-card" style={{ maxHeight: 240 }}>
           <img
             src={dashboard.squadPhotoUrl}
             alt="Bont Sloots FC Squad"
             className="w-full object-cover object-center"
-            style={{ maxHeight: 220 }}
+            style={{ maxHeight: 240 }}
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+          <div className="absolute left-4 bottom-4">
+            <div className="text-[10px] uppercase tracking-[0.22em] text-primary font-black">Bont Sloots FC</div>
+            <div className="text-2xl font-black text-white leading-tight">Matchday Hub</div>
+          </div>
         </div>
       )}
 
