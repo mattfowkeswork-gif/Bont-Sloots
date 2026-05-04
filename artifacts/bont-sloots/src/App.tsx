@@ -8,6 +8,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import { Fixtures } from "@/pages/Fixtures";
 import { Leaderboard } from "@/pages/Leaderboard";
 import { Squad } from "@/pages/Squad";
+import { TrophyRoom } from "@/pages/TrophyRoom";
 import { PlayerProfile } from "@/pages/PlayerProfile";
 import { AdminLogin } from "@/pages/admin/AdminLogin";
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
@@ -28,6 +29,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/fixtures" component={Fixtures} />
         <Route path="/leaderboard" component={Leaderboard} />
+        <Route path="/trophies" component={TrophyRoom} />
         <Route path="/players" component={Squad} />
         <Route path="/players/:id" component={PlayerProfile} />
         <Route path="/admin" component={AdminLogin} />

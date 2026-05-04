@@ -8,6 +8,7 @@ export function BottomNav() {
     { href: "/", label: "Home", icon: Home },
     { href: "/fixtures", label: "Fixtures", icon: CalendarDays },
     { href: "/leaderboard", label: "Wall", icon: Trophy },
+    { href: "/trophies", label: "Trophies", icon: Trophy },
     { href: "/players", label: "Squad", icon: Users },
   ];
 
